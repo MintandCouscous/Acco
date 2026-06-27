@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acco — Accomplir Deal Intelligence</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --ink: #0f0f0f;
+    --ink-2: #3a3a3a;
+    --ink-3: #6b6b6b;
+    --ink-4: #9a9a9a;
+    --paper: #f7f6f3;
+    --paper-2: #efede8;
+    --paper-3: #e5e2db;
+    --rule: #dedad2;
+    --accent: #1a1a2e;
+    --accent-2: #2d2d4e;
+    --green: #0d7a55;
+    --green-bg: #e8f5f0;
+    --amber: #92400e;
+    --amber-bg: #fef3c7;
+    --red: #9b1c1c;
+    --red-bg: #fde8e8;
+    --blue: #1e40af;
+    --blue-bg: #eff6ff;
+    --purple: #5b21b6;
+    --purple-bg: #f5f3ff;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Inter', system-ui, sans-serif;
+    --r: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 14px; }
+  body { font-family: var(--sans); background: var(--paper); color: var(--ink); min-height: 100vh; }
+
+  /* ── LAYOUT ── */
+  .app { display: grid; grid-template-rows: 56px 1fr; height: 100vh; }
+  .topbar { background: var(--accent); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; position: sticky; top: 0; z-index: 100; }
+  .topbar-left { display: flex; align-items: center; gap: 14px; }
+  .logo-mark { width: 30px; height: 30px; border-radius: 6px; background: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; color: var(--accent); letter-spacing: -0.5px; }
+  .logo-name { color: #fff; font-size: 15px; font-weight: 500; letter-spacing: -0.2px; }
+  .logo-sub { color: rgba(255,255,255,0.45); font-size: 11px; margin-top: 1px; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .live-badge { display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 3px 10px; font-size: 11px; color: rgba(255,255,255,0.8); font-family: var(--mono); }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; flex-shrink: 0; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .refresh-btn { display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 5px 12px; color: #fff; font-size: 12px; cursor: pointer; font-family: var(--sans); transition: all 0.15s; }
+  .refresh-btn:hover { background: rgba(255,255,255,0.2); }
+  .refresh-btn svg { transition: transform 0.5s; }
+  .refresh-btn.spinning svg { transform: rotate(360deg); }
+
+  .main { display: grid; grid-template-columns: 200px 1fr; overflow: hidden; }
+
+  /* ── SIDEBAR ── */
+  .sidebar { background: var(--paper-2); border-right: 1px solid var(--rule); padding: 20px 0; display: flex; flex-direction: column; overflow-y: auto; }
+  .nav-section { padding: 0 14px; margin-bottom: 6px; }
+  .nav-label { font-size: 10px; font-weight: 500; color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; padding: 0 6px; }
+  .nav-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--ink-2); transition: all 0.1s; border: none; background: none; width: 100%; text-align: left; }
+  .nav-item:hover { background: var(--paper-3); color: var(--ink); }
+  .nav-item.active { background: var(--accent); color: #fff; }
+  .nav-item svg { flex-shrink: 0; opacity: 0.7; }
+  .nav-item.active svg { opacity: 1; }
+  .nav-count { margin-left: auto; font-size: 10px; font-family: var(--mono); background: rgba(0,0,0,0.08); border-radius: 10px; padding: 1px 6px; }
+  .nav-item.active .nav-count { background: rgba(255,255,255,0.2); }
+  .nav-divider { border: none; border-top: 1px solid var(--rule); margin: 10px 14px; }
+  .last-refresh { padding: 12px 20px 0; font-size: 10px; color: var(--ink-4); font-family: var(--mono); margin-top: auto; }
+
+  /* ── CONTENT ── */
+  .content { overflow-y: auto; }
+  .view { display: none; padding: 28px 28px 60px; }
+  .view.active { display: block; }
+
+  /* ── STATS ROW ── */
+  .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: #fff; border: 1px solid var(--rule); border-radius: var(--r); padding: 16px; }
+  .stat-label { font-size: 11px; color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .stat-val { font-size: 26px; font-weight: 500; color: var(--ink); font-family: var(--mono); line-height: 1; }
+  .stat-sub { font-size: 11px; color: var(--ink-3); margin-top: 5px; }
+  .stat-val.red { color: var(--red); }
+  .stat-val.amber { color: var(--amber); }
+  .stat-val.green { color: var(--green); }
+
+  /* ── PAGE HEADER ── */
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .page-title { font-size: 18px; font-weight: 600; color: var(--ink); letter-spacing: -0.3px; }
+  .page-sub { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+  .filter-bar select, .filter-bar input { font-size: 12px; padding: 6px 10px; border: 1px solid var(--rule); border-radius: 6px; background: #fff; color: var(--ink); font-family: var(--sans); outline: none; }
+  .filter-bar select:focus, .filter-bar input:focus { border-color: var(--accent); }
+  .filter-bar input { flex: 1; min-width: 140px; }
+  .filter-count { font-size: 11px; color: var(--ink-4); font-family: var(--mono); margin-left: auto; }
+
+  /* ── TABLE ── */
+  .table-wrap { background: #fff; border: 1px solid var(--rule); border-radius: var(--r); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead { background: var(--paper-2); }
+  th { text-align: left; padding: 9px 14px; font-size: 11px; font-weight: 500; color: var(--ink-3); white-space: nowrap; border-bottom: 1px solid var(--rule); }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--rule); color: var(--ink-2); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--paper); }
+  td.task-name { color: var(--ink); font-weight: 500; max-width: 280px; }
+  td.note { color: var(--ink-3); font-size: 11px; max-width: 200px; line-height: 1.5; }
+  td.co-name { font-weight: 500; color: var(--ink); }
+
+  /* ── BADGES ── */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 500; white-space: nowrap; }
+  .b-open { background: var(--green-bg); color: var(--green); }
+  .b-closed { background: var(--paper-3); color: var(--ink-3); }
+  .b-hold { background: var(--amber-bg); color: var(--amber); }
+  .b-buy { background: var(--blue-bg); color: var(--blue); }
+  .b-sell { background: var(--purple-bg); color: var(--purple); }
+  .b-ip { background: var(--blue-bg); color: var(--blue); }
+  .b-done { background: var(--green-bg); color: var(--green); }
+  .b-blocked { background: var(--red-bg); color: var(--red); }
+  .b-ns { background: var(--paper-3); color: var(--ink-3); }
+  .due-ov { font-size: 10px; padding: 1px 7px; border-radius: 10px; background: var(--red-bg); color: var(--red); white-space: nowrap; font-family: var(--mono); }
+  .due-soon { font-size: 10px; padding: 1px 7px; border-radius: 10px; background: var(--amber-bg); color: var(--amber); white-space: nowrap; font-family: var(--mono); }
+  .due-ok { font-size: 10px; padding: 1px 7px; border-radius: 10px; background: var(--paper-2); color: var(--ink-3); white-space: nowrap; font-family: var(--mono); }
+
+  /* ── OVERVIEW CARDS ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 12px; letter-spacing: -0.1px; }
+  .section-block { background: #fff; border: 1px solid var(--rule); border-radius: var(--r); overflow: hidden; }
+  .section-block-hdr { padding: 12px 16px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; }
+  .section-block-hdr span { font-size: 12px; font-weight: 500; color: var(--ink); }
+  .section-block-hdr small { font-size: 10px; color: var(--ink-4); font-family: var(--mono); }
+
+  .task-row { padding: 10px 16px; border-bottom: 1px solid var(--rule); display: flex; gap: 10px; align-items: flex-start; }
+  .task-row:last-child { border-bottom: none; }
+  .task-row.ov { border-left: 3px solid var(--red); }
+  .task-row.soon { border-left: 3px solid #d97706; }
+  .task-row.ip { border-left: 3px solid #3b82f6; }
+  .av { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .av-Z { background: #dbeafe; color: #1e40af; }
+  .av-A { background: #d1fae5; color: #065f46; }
+  .av-R { background: #fef3c7; color: #92400e; }
+  .av-Y { background: #ede9fe; color: #5b21b6; }
+  .av-L { background: #fee2e2; color: #991b1b; }
+  .av-N { background: #fce7f3; color: #9d174d; }
+  .av-def { background: var(--paper-3); color: var(--ink-3); }
+  .task-row-name { font-size: 12px; font-weight: 500; color: var(--ink); line-height: 1.4; }
+  .task-row-meta { font-size: 10px; color: var(--ink-4); margin-top: 2px; }
+
+  .intent-card { padding: 12px 16px; border-bottom: 1px solid var(--rule); }
+  .intent-card:last-child { border-bottom: none; }
+  .intent-card-name { font-size: 12px; font-weight: 500; color: var(--ink); }
+  .intent-card-sub { font-size: 11px; color: var(--ink-3); margin-top: 1px; margin-bottom: 6px; }
+  .tag-row { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tag { font-size: 10px; padding: 2px 7px; border-radius: 20px; background: var(--paper-2); border: 1px solid var(--rule); color: var(--ink-3); }
+  .tag.hot { background: var(--green-bg); color: var(--green); border-color: #a7f3d0; }
+
+  /* ── PEOPLE ── */
+  .people-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .person-card { background: #fff; border: 1px solid var(--rule); border-radius: var(--r); padding: 16px; }
+  .person-hdr { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .person-av { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .person-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .person-role { font-size: 11px; color: var(--ink-4); }
+  .person-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .ps { text-align: center; padding: 8px 4px; background: var(--paper); border-radius: 6px; }
+  .ps-n { font-size: 18px; font-weight: 600; color: var(--ink); font-family: var(--mono); }
+  .ps-l { font-size: 10px; color: var(--ink-4); margin-top: 2px; }
+
+  /* ── ACCO CHAT ── */
+  .acco-layout { display: grid; grid-template-columns: 1fr 340px; gap: 16px; height: calc(100vh - 56px - 56px); }
+  .acco-chat { background: #fff; border: 1px solid var(--rule); border-radius: var(--r); display: flex; flex-direction: column; overflow: hidden; }
+  .acco-chat-hdr { padding: 14px 18px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; gap: 10px; background: var(--paper); }
+  .acco-mark { width: 32px; height: 32px; border-radius: 8px; background: var(--accent); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 13px; }
+  .acco-title { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .acco-sub { font-size: 10px; color: var(--ink-4); }
+  .acco-msgs { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .msg { display: flex; gap: 8px; align-items: flex-start; }
+  .msg.user { flex-direction: row-reverse; }
+  .msg-av { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 9px; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+  .msg-av.user { background: var(--paper-3); color: var(--ink-3); }
+  .bubble { max-width: 78%; padding: 9px 13px; border-radius: 10px; font-size: 12px; line-height: 1.6; }
+  .msg.acco .bubble { background: var(--paper); border: 1px solid var(--rule); color: var(--ink); border-radius: 3px 10px 10px 10px; }
+  .msg.user .bubble { background: var(--accent); color: #fff; border-radius: 10px 3px 10px 10px; }
+  .typing span { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-4); animation: blink 1.2s infinite; display: inline-block; margin: 0 1px; }
+  .typing span:nth-child(2){animation-delay:.2s} .typing span:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-4px)}}
+
+  .acco-chips { padding: 8px 16px; border-top: 1px solid var(--rule); display: flex; flex-wrap: wrap; gap: 5px; background: var(--paper); }
+  .chip { padding: 4px 10px; border-radius: 20px; font-size: 11px; border: 1px solid var(--rule); background: #fff; color: var(--ink-2); cursor: pointer; transition: all 0.1s; }
+  .chip:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .acco-input-row { padding: 10px 14px; border-top: 1px solid var(--rule); display: flex; gap: 8px; align-items: center; }
+  .acco-inp { flex: 1; border: 1px solid var(--rule); border-radius: 20px; padding: 8px 14px; font-size: 12px; background: var(--paper); color: var(--ink); outline: none; font-family: var(--sans); }
+  .acco-inp:focus { border-color: var(--accent); background: #fff; }
+  .send-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .send-btn:hover { background: var(--accent-2); }
+
+  .acco-sidebar { display: flex; flex-direction: column; gap: 12px; }
+  .acco-context { background: #fff; border: 1px solid var(--rule); border-radius: var(--r); padding: 14px; }
+  .acco-context-title { font-size: 11px; font-weight: 600; color: var(--ink); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+  .ctx-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--rule); font-size: 11px; }
+  .ctx-row:last-child { border-bottom: none; }
+  .ctx-label { color: var(--ink-3); }
+  .ctx-val { font-family: var(--mono); color: var(--ink); font-weight: 500; }
+
+  /* ── LOADING ── */
+  .loading-state { display: flex; align-items: center; gap: 8px; padding: 20px; color: var(--ink-3); font-size: 12px; }
+  .spinner { width: 14px; height: 14px; border: 2px solid var(--rule); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── EMPTY ── */
+  .empty { padding: 40px; text-align: center; color: var(--ink-4); font-size: 12px; }
+  .empty svg { margin: 0 auto 10px; display: block; opacity: 0.3; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .main { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .two-col, .three-col { grid-template-columns: 1fr; }
+    .people-grid { grid-template-columns: 1fr 1fr; }
+    .acco-layout { grid-template-columns: 1fr; height: auto; }
+    .acco-sidebar { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo-mark">Ac</div>
+      <div>
+        <div class="logo-name">Acco</div>
+        <div class="logo-sub">Accomplir Deal Intelligence</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="live-badge"><span class="live-dot"></span><span id="live-text">Loading...</span></div>
+      <button class="refresh-btn" onclick="refreshAll()">
+        <svg id="refresh-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+        Refresh tasks
+      </button>
+    </div>
+  </header>
+
+  <div class="main">
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+      <div class="nav-section">
+        <div class="nav-label">Workspace</div>
+        <button class="nav-item active" onclick="show('overview',this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          Overview
+        </button>
+        <button class="nav-item" onclick="show('tasks',this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+          Tasks
+          <span class="nav-count" id="nav-task-count">—</span>
+        </button>
+        <button class="nav-item" onclick="show('leads',this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          Leads
+          <span class="nav-count">65</span>
+        </button>
+        <button class="nav-item" onclick="show('intent',this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          Intent
+          <span class="nav-count">113</span>
+        </button>
+      </div>
+      <hr class="nav-divider">
+      <div class="nav-section">
+        <div class="nav-label">Team</div>
+        <button class="nav-item" onclick="show('people',this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          People
+        </button>
+      </div>
+      <hr class="nav-divider">
+      <div class="nav-section">
+        <div class="nav-label">Assistant</div>
+        <button class="nav-item" onclick="show('acco',this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          Ask Acco
+        </button>
+      </div>
+      <div class="last-refresh" id="last-refresh">Not yet refreshed</div>
+    </nav>
+
+    <!-- CONTENT -->
+    <main class="content">
+
+      <!-- OVERVIEW -->
+      <div id="view-overview" class="view active">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Good morning, Accomplir</div>
+            <div class="page-sub" id="today-date">—</div>
+          </div>
+        </div>
+        <div class="stats" id="overview-stats">
+          <div class="stat-card"><div class="stat-label">Open leads</div><div class="stat-val">38</div><div class="stat-sub">of 65 total</div></div>
+          <div class="stat-card"><div class="stat-label">Intent signals</div><div class="stat-val">113</div><div class="stat-sub">Last: 27 Jun</div></div>
+          <div class="stat-card"><div class="stat-label">Total tasks</div><div class="stat-val" id="stat-total">—</div><div class="stat-sub">Google Sheets live</div></div>
+          <div class="stat-card"><div class="stat-label">Overdue</div><div class="stat-val red" id="stat-ov">—</div><div class="stat-sub">need attention</div></div>
+          <div class="stat-card"><div class="stat-label">In progress</div><div class="stat-val amber" id="stat-ip">—</div><div class="stat-sub">active now</div></div>
+        </div>
+        <div class="two-col">
+          <div>
+            <div class="section-title">Overdue & due soon</div>
+            <div class="section-block"><div id="urgent-list"><div class="loading-state"><div class="spinner"></div>Loading tasks...</div></div></div>
+          </div>
+          <div>
+            <div class="section-title">Latest intent signals</div>
+            <div class="section-block">
+              <div class="intent-card"><div class="intent-card-name">Rainmatter VC (Zerodha)</div><div class="intent-card-sub">Fintech · Climate · Deeptech · 27 Jun</div><div class="tag-row"><span class="tag hot">Antlia match</span><span class="tag">Dinesh Pai</span></div></div>
+              <div class="intent-card"><div class="intent-card-name">Saffron Stays</div><div class="intent-card-sub">Luxury Villas · 24 Jun · $3.2M raised</div><div class="tag-row"><span class="tag">North + Maharashtra</span></div></div>
+              <div class="intent-card"><div class="intent-card-name">Kalash Seeds</div><div class="intent-card-sub">Agro · Seed Mfg · 17 Jun · Upto 100cr</div><div class="tag-row"><span class="tag hot">Pallishree response</span></div></div>
+              <div class="intent-card"><div class="intent-card-name">DS Group</div><div class="intent-card-sub">Consumer / Hospitality · 1500cr+ · 20 Jun</div><div class="tag-row"><span class="tag">Distressed focus</span></div></div>
+              <div class="intent-card"><div class="intent-card-name">Adani Group</div><div class="intent-card-sub">T&D / Power · 4 Jun · >1000cr revenue cos</div><div class="tag-row"><span class="tag">Ind Bharat response</span><span class="tag">Ankit MD</span></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="section-title">Priority leads — action needed</div>
+        <div class="section-block">
+          <div class="task-row ip"><div class="av av-Z">Z</div><div><div class="task-row-name">EaseMyTrip <span class="badge b-sell">Sell</span></div><div class="task-row-meta">Follow up with Vikash Goyal · Zeenath · INR 100cr</div></div></div>
+          <div class="task-row ip"><div class="av av-A">A</div><div><div class="task-row-name">Saatvik Green Energy <span class="badge b-buy">Buy</span></div><div class="task-row-meta">Discuss and get EL · Zeenath, Ashish · INR 200-400cr</div></div></div>
+          <div class="task-row ip"><div class="av av-A">A</div><div><div class="task-row-name">India Circuits <span class="badge b-sell">Sell</span></div><div class="task-row-meta">Get sell-side EL · Ashish · INR 200-400cr</div></div></div>
+          <div class="task-row ip"><div class="av av-L">L</div><div><div class="task-row-name">Ranchi Hospital <span class="badge b-sell">Sell</span></div><div class="task-row-meta">Make teaser, reachout Apex · Libin · Due 30 Jun</div></div></div>
+          <div class="task-row ip"><div class="av av-Z">Z</div><div><div class="task-row-name">Kavach — FIIT Incubation application</div><div class="task-row-meta">In progress · Zeenath · Due 29 Jun</div></div></div>
+          <div class="task-row ip"><div class="av av-A">A</div><div><div class="task-row-name">BLS International <span class="badge b-buy">Buy</span></div><div class="task-row-meta">Map companies per new criteria (biometrics etc) · Ashish/Libin · INR 100cr+</div></div></div>
+        </div>
+      </div>
+
+      <!-- TASKS -->
+      <div id="view-tasks" class="view">
+        <div class="page-header">
+          <div><div class="page-title">Tasks</div><div class="page-sub">Live from Google Sheets — refreshed on load</div></div>
+        </div>
+        <div class="filter-bar">
+          <select id="t-owner" onchange="filterTasks()">
+            <option value="">All people</option>
+            <option>Zeenath</option><option>Ashish</option><option>Raghav</option>
+            <option>Yohaanne</option><option>Libin</option><option>Nandita</option>
+          </select>
+          <select id="t-status" onchange="filterTasks()">
+            <option value="">All statuses</option>
+            <option value="progress">In progress</option>
+            <option value="not started">Not Started</option>
+            <option value="completed">Completed</option>
+            <option value="blocked">Blocked</option>
+          </select>
+          <select id="t-project" onchange="filterTasks()"><option value="">All projects</option></select>
+          <input id="t-search" placeholder="Search task or project..." oninput="filterTasks()">
+          <span class="filter-count" id="task-count-label">— tasks</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Owner</th><th>Project</th><th>Task</th><th>Due</th><th>Status</th><th>Notes</th></tr></thead>
+            <tbody id="tasks-body"><tr><td colspan="6"><div class="loading-state"><div class="spinner"></div>Loading from Google Sheets...</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- LEADS -->
+      <div id="view-leads" class="view">
+        <div class="page-header">
+          <div><div class="page-title">Leads</div><div class="page-sub">65 mandates · Updated 26 Jun 2026 from OneDrive</div></div>
+        </div>
+        <div class="filter-bar">
+          <select id="l-status" onchange="filterLeads()"><option value="">All statuses</option><option>Open</option><option>Closed</option><option>On Hold</option></select>
+          <select id="l-type" onchange="filterLeads()"><option value="">All types</option><option>Buy</option><option>Sell</option><option>Raise</option></select>
+          <select id="l-owner" onchange="filterLeads()"><option value="">All owners</option><option>Zeenath</option><option>Ashish</option><option>Raghav</option><option>Yohaanne</option><option>Libin</option><option>Nandita</option></select>
+          <input id="l-search" placeholder="Search company or next action..." oninput="filterLeads()">
+          <span class="filter-count" id="lead-count-label">65 leads</span>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>#</th><th>Company</th><th>Type</th><th>Size</th><th>Status</th><th>Lead</th><th>Contact</th><th>Next action</th></tr></thead>
+          <tbody id="leads-body"></tbody>
+        </table></div>
+      </div>
+
+      <!-- INTENT -->
+      <div id="view-intent" class="view">
+        <div class="page-header">
+          <div><div class="page-title">Investor Intent</div><div class="page-sub">113 signals · Updated 27 Jun 2026 from OneDrive</div></div>
+        </div>
+        <div class="filter-bar">
+          <select id="i-sector" onchange="filterIntent()"><option value="">All sectors</option></select>
+          <input id="i-search" placeholder="Search company, sector, or intent..." oninput="filterIntent()">
+          <span class="filter-count" id="intent-count-label">113 signals</span>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Date</th><th>Company</th><th>Sector</th><th>Range</th><th>Source</th><th>Contact</th><th>Intent</th></tr></thead>
+          <tbody id="intent-body"></tbody>
+        </table></div>
+      </div>
+
+      <!-- PEOPLE -->
+      <div id="view-people" class="view">
+        <div class="page-header"><div><div class="page-title">Team</div><div class="page-sub">Task and lead ownership across Accomplir</div></div></div>
+        <div class="people-grid" id="people-grid"></div>
+      </div>
+
+      <!-- ACCO -->
+      <div id="view-acco" class="view" style="padding:28px 28px 28px">
+        <div class="acco-layout">
+          <div class="acco-chat">
+            <div class="acco-chat-hdr">
+              <div class="acco-mark">A</div>
+              <div>
+                <div class="acco-title">Acco</div>
+                <div class="acco-sub">Ask anything about your leads, tasks, or intent signals</div>
+              </div>
+            </div>
+            <div class="acco-msgs" id="msgs">
+              <div class="msg acco">
+                <div class="msg-av">A</div>
+                <div class="bubble">Hi! I'm Acco — I have your full deal data live. 65 leads, 113 intent signals, and your tasks from Google Sheets.<br><br>Just talk to me naturally. You can ask questions, log updates, or ask me to match buyers to sellers.</div>
+              </div>
+            </div>
+            <div class="acco-chips">
+              <div class="chip" onclick="askAcco('What tasks are overdue right now?')">Overdue tasks</div>
+              <div class="chip" onclick="askAcco('Which leads have no EL yet and need urgent attention?')">Leads without EL</div>
+              <div class="chip" onclick="askAcco('Match the latest intent signals to our current leads')">Intent × lead matches</div>
+              <div class="chip" onclick="askAcco('What is Raghav working on this week?')">Raghav this week</div>
+              <div class="chip" onclick="askAcco('Which hospital leads match what Aster DM is looking for?')">Hospital matches</div>
+              <div class="chip" onclick="askAcco('What are the biggest open buy-side mandates by ticket size?')">Top buy-side mandates</div>
+            </div>
+            <div class="acco-input-row">
+              <input class="acco-inp" id="acco-inp" placeholder="Ask anything or log an update..." onkeydown="if(event.key==='Enter')send()">
+              <button class="send-btn" onclick="send()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              </button>
+            </div>
+          </div>
+          <div class="acco-sidebar">
+            <div class="acco-context">
+              <div class="acco-context-title">Data sources</div>
+              <div class="ctx-row"><span class="ctx-label">Tasks</span><span class="ctx-val" id="ctx-tasks">Loading...</span></div>
+              <div class="ctx-row"><span class="ctx-label">Leads</span><span class="ctx-val">65 leads</span></div>
+              <div class="ctx-row"><span class="ctx-label">Intent</span><span class="ctx-val">113 signals</span></div>
+              <div class="ctx-row"><span class="ctx-label">Last refresh</span><span class="ctx-val" id="ctx-refresh">—</span></div>
+            </div>
+            <div class="acco-context">
+              <div class="acco-context-title">Quick matches</div>
+              <div class="intent-card" style="padding:10px 0;border:none">
+                <div class="intent-card-name" style="font-size:11px">Saatvik Green → India Circuits</div>
+                <div class="intent-card-sub" style="font-size:10px">PCB mfg, smart metering, capacitors</div>
+              </div>
+              <div class="intent-card" style="padding:10px 0;border:none">
+                <div class="intent-card-name" style="font-size:11px">Rainmatter VC → Antlia Fintech</div>
+                <div class="intent-card-sub" style="font-size:10px">Fintech / payments / BC match</div>
+              </div>
+              <div class="intent-card" style="padding:10px 0;border-bottom:none">
+                <div class="intent-card-name" style="font-size:11px">Aster DM → Hospital leads</div>
+                <div class="intent-card-sub" style="font-size:10px">150+ beds, South + metro cities</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-h3CRESg-c-6PQkkNpYb-kyD4eUheBbiAD-ae6h-b6CoNJn9s9JoIOfrNku5zkShSsqdiCjABYUZE/pub?output=csv';
+const TODAY = new Date('2026-06-27');
+let TASKS = [];
+
+// ── NAV ──
+function show(view, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+// ── DATE ──
+document.getElementById('today-date').textContent = TODAY.toLocaleDateString('en-IN', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+// ── FETCH TASKS ──
+async function fetchTasks() {
+  try {
+    const r = await fetch(SHEETS_URL);
+    const text = await r.text();
+    const rows = parseCSV(text);
+    TASKS = rows.filter(r => r.Task && r.Task.trim());
+    renderTasks(TASKS);
+    populateProjects();
+    updateStats();
+    renderUrgent();
+    const now = new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
+    document.getElementById('last-refresh').textContent = 'Tasks refreshed ' + now;
+    document.getElementById('ctx-refresh').textContent = now;
+    document.getElementById('ctx-tasks').textContent = TASKS.length + ' tasks';
+    document.getElementById('nav-task-count').textContent = TASKS.length;
+    document.getElementById('live-text').textContent = `65 leads · 113 signals · ${TASKS.length} tasks`;
+    return true;
+  } catch(e) {
+    console.error('Fetch error:', e);
+    document.getElementById('tasks-body').innerHTML = '<tr><td colspan="6"><div class="empty">Could not load tasks. Check network.</div></td></tr>';
+    return false;
+  }
+}
+
+function parseCSV(text) {
+  const lines = text.split('\n');
+  const headers = parseCSVLine(lines[0]);
+  return lines.slice(1).map(line => {
+    if (!line.trim()) return null;
+    const vals = parseCSVLine(line);
+    const obj = {};
+    headers.forEach((h, i) => { obj[h.trim()] = (vals[i] || '').trim(); });
+    return obj;
+  }).filter(Boolean);
+}
+
+function parseCSVLine(line) {
+  const result = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    if (line[i] === '"') { inQ = !inQ; }
+    else if (line[i] === ',' && !inQ) { result.push(cur); cur = ''; }
+    else { cur += line[i]; }
+  }
+  result.push(cur);
+  return result;
+}
+
+async function refreshAll() {
+  const btn = document.querySelector('.refresh-btn');
+  const icon = document.getElementById('refresh-icon');
+  btn.classList.add('spinning');
+  icon.style.transition = 'transform 0.6s';
+  icon.style.transform = 'rotate(360deg)';
+  await fetchTasks();
+  setTimeout(() => { icon.style.transform = ''; btn.classList.remove('spinning'); }, 700);
+}
+
+// ── DATE HELPERS ──
+function isOverdue(due) {
+  if (!due) return false;
+  try { const d = new Date(due.replace(/(\d{2})-(\d{2})-(\d{4})/, '$3-$2-$1')); return d < TODAY && !isNaN(d); } catch { return false; }
+}
+function isDueSoon(due) {
+  if (!due) return false;
+  try {
+    const d = new Date(due.replace(/(\d{2})-(\d{2})-(\d{4})/, '$3-$2-$1'));
+    const diff = (d - TODAY) / (1000 * 60 * 60 * 24);
+    return diff >= 0 && diff <= 7;
+  } catch { return false; }
+}
+function dueBadge(due, status) {
+  if (!due || status === 'Completed') return due ? `<span class="due-ok">${due}</span>` : '—';
+  if (isOverdue(due)) return `<span class="due-ov">${due} ↑</span>`;
+  if (isDueSoon(due)) return `<span class="due-soon">${due}</span>`;
+  return `<span style="font-size:11px;color:var(--ink-3)">${due}</span>`;
+}
+
+// ── STATS ──
+function updateStats() {
+  const active = TASKS.filter(t => t.Status !== 'Completed');
+  const ov = active.filter(t => isOverdue(t['Due Date'])).length;
+  const ip = TASKS.filter(t => t.Status && t.Status.toLowerCase().includes('progress')).length;
+  document.getElementById('stat-total').textContent = TASKS.length;
+  document.getElementById('stat-ov').textContent = ov;
+  document.getElementById('stat-ip').textContent = ip;
+}
+
+// ── URGENT ──
+function renderUrgent() {
+  const active = TASKS.filter(t => t.Status !== 'Completed');
+  const urgent = active.filter(t => isOverdue(t['Due Date']) || isDueSoon(t['Due Date']))
+    .sort((a, b) => new Date(a['Due Date']) - new Date(b['Due Date']))
+    .slice(0, 8);
+  const el = document.getElementById('urgent-list');
+  if (!urgent.length) { el.innerHTML = '<div class="empty">No overdue or upcoming tasks 🎉</div>'; return; }
+  el.innerHTML = urgent.map(t => {
+    const ov = isOverdue(t['Due Date']);
+    const cls = ov ? 'ov' : 'soon';
+    const avKey = (t.Name || '?')[0].toUpperCase();
+    const avClass = ['Z','A','R','Y','L','N'].includes(avKey) ? 'av-'+avKey : 'av-def';
+    return `<div class="task-row ${cls}">
+      <div class="av ${avClass}">${avKey}</div>
+      <div>
+        <div class="task-row-name">${t.Task}</div>
+        <div class="task-row-meta">${t.Name} · ${t.Project} · ${dueBadge(t['Due Date'], t.Status)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── TASKS TABLE ──
+function statusBadge(s) {
+  if (!s) return '';
+  const sl = s.toLowerCase();
+  if (sl.includes('progress')) return `<span class="badge b-ip">In progress</span>`;
+  if (sl.includes('complet')) return `<span class="badge b-done">Completed</span>`;
+  if (sl.includes('block')) return `<span class="badge b-blocked">Blocked</span>`;
+  if (sl.includes('not')) return `<span class="badge b-ns">Not started</span>`;
+  return `<span class="badge b-ns">${s}</span>`;
+}
+
+function renderTasks(data) {
+  const body = document.getElementById('tasks-body');
+  if (!data.length) { body.innerHTML = '<tr><td colspan="6"><div class="empty">No tasks found.</div></td></tr>'; return; }
+  body.innerHTML = data.map(t => {
+    const due = t['Due Date'] || '';
+    const status = t.Status || '';
+    return `<tr>
+      <td style="white-space:nowrap;font-weight:500">${t.Name || '—'}</td>
+      <td style="color:var(--ink-3);font-size:11px;white-space:nowrap">${t.Project || '—'}</td>
+      <td class="task-name">${t.Task || '—'}</td>
+      <td style="white-space:nowrap">${dueBadge(due, status)}</td>
+      <td>${statusBadge(status)}</td>
+      <td class="note">${(t.Notes || '').substring(0, 80)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('task-count-label').textContent = data.length + ' tasks';
+}
+
+function filterTasks() {
+  const ow = document.getElementById('t-owner').value.toLowerCase();
+  const st = document.getElementById('t-status').value.toLowerCase();
+  const pr = document.getElementById('t-project').value;
+  const q = document.getElementById('t-search').value.toLowerCase();
+  const filtered = TASKS.filter(t =>
+    (!ow || t.Name.toLowerCase().includes(ow)) &&
+    (!st || (t.Status || '').toLowerCase().includes(st)) &&
+    (!pr || t.Project === pr) &&
+    (!q || t.Task.toLowerCase().includes(q) || (t.Project || '').toLowerCase().includes(q))
+  );
+  renderTasks(filtered);
+}
+
+function populateProjects() {
+  const sel = document.getElementById('t-project');
+  const existing = new Set([...sel.options].map(o => o.value));
+  const projects = [...new Set(TASKS.map(t => t.Project).filter(Boolean))].sort();
+  projects.forEach(p => {
+    if (!existing.has(p)) { const o = document.createElement('option'); o.value = p; o.textContent = p; sel.appendChild(o); }
+  });
+}
+
+// ── LEADS ──
+const LEADS = [
+  {n:1,co:"VITSKamats Group",type:"Buy",status:"Open",size:"50-100cr",lead:"Raghav/Libin",contact:"Vikram Kamat (MD)",next:"Send other batches as needed"},
+  {n:2,co:"Bajel Projects",type:"Buy",status:"Open",size:"50cr+",lead:"Raghav/Libin",contact:"Sanket Kate, Harshal Vyas",next:"Share additional batches"},
+  {n:3,co:"Torrent Electricals",type:"Buy",status:"On Hold",size:"50cr+",lead:"Ashish",contact:"",next:"Gupta Power on hold"},
+  {n:4,co:"India Circuits",type:"Sell",status:"Open",size:"200-400cr",lead:"Ashish",contact:"Rajneesh Garg (MD)",next:"Discuss and get sell-side EL"},
+  {n:5,co:"Alfa Transformers",type:"Sell",status:"Open",size:"40-60cr",lead:"Mergerdomo",contact:"Dilip Kumar Das (MD)",next:"Set up call"},
+  {n:6,co:"Seafood Torry Harris",type:"Sell",status:"Closed",size:"35-45cr",lead:"Newspaper (Ashish)",contact:"Rajesh Babu",next:"Done"},
+  {n:7,co:"Emvi Logistics",type:"Sell",status:"Closed",size:"15-30cr",lead:"Newspaper",contact:"Harish Nathan (MD)",next:"Assess transaction"},
+  {n:8,co:"EaseMyTrip",type:"Sell",status:"Open",size:"100cr",lead:"Zeenath",contact:"Vikash Goyal (CFO)",next:"Follow up with Vikash"},
+  {n:9,co:"Saatvik Green Energy",type:"Buy",status:"Open",size:"200-400cr",lead:"Zeenath, Ashish",contact:"Chetan Dhundhele (M&A)",next:"Discuss and get EL"},
+  {n:10,co:"Antlia Fintech",type:"Sell",status:"Open",size:"10cr",lead:"ISB community",contact:"Rajesh Sinha (MD)",next:"Share brief with BLS after call"},
+  {n:11,co:"BLS International",type:"Buy",status:"Open",size:"100cr+",lead:"Ashish/Libin",contact:"Sanjeet Bhatia (M&A)",next:"Map companies per new criteria"},
+  {n:12,co:"HFCL",type:"Buy",status:"Open",size:"100cr+",lead:"Yohaanne, Zeenath",contact:"Sunil Seth (Strategy Head)",next:"Approach note awaiting response"},
+  {n:13,co:"Universal Consulting",type:"Other",status:"Open",size:"NA",lead:"Yohaanne",contact:"Jay Desia",next:"Requested call next week"},
+  {n:15,co:"Purva Steel",type:"Sell",status:"Open",size:"50cr+",lead:"Raghav, Zeenath",contact:"Lalit Purva (MD)",next:"Re-establish contact with bankers"},
+  {n:16,co:"Tulsyan Steel NEC",type:"Buy",status:"Open",size:"100cr+",lead:"Ashish/Zeenath",contact:"",next:"Re-establish contact"},
+  {n:17,co:"TRN Energy",type:"Both",status:"On Hold",size:"100cr+",lead:"Raghav",contact:"Deepak Sharma",next:"Communications active"},
+  {n:18,co:"Apparel Manufacturer",type:"Sell",status:"Closed",size:"50cr",lead:"Libin",contact:"",next:"Intro meeting done"},
+  {n:20,co:"Green Carbon Inc",type:"Sell",status:"On Hold",size:"",lead:"Raghav",contact:"Arun Sharma",next:"Not pursuing"},
+  {n:23,co:"Ravina Healthcare",type:"Sell",status:"Open",size:"50-60cr",lead:"Zeenath/Yohaanne",contact:"",next:"Seek meeting with doctor"},
+  {n:25,co:"SLB Ethanol",type:"Sell",status:"On Hold",size:"150cr",lead:"Newspaper (Zeenath)",contact:"Ramasubbu",next:"Contact NARCL or promoters"},
+  {n:27,co:"Grainotch",type:"Buy",status:"Open",size:"NA",lead:"Newspaper (Yohanne)",contact:"",next:"Making brief, cold call promoters"},
+  {n:28,co:"Creamy Foods",type:"Buy",status:"Open",size:"NA",lead:"Reachout Dairy",contact:"",next:"Cold call initiated"},
+  {n:29,co:"Nova Dairy",type:"Buy",status:"Open",size:"NA",lead:"Reachout Dairy",contact:"",next:"Cold call initiated"},
+  {n:32,co:"Rajnigandha Cables",type:"Sell",status:"Open",size:"30-40cr",lead:"Raghav",contact:"Deepak Sharma",next:"Not pursuing"},
+  {n:33,co:"K.A. Malle Pharmaceuticals",type:"Sell",status:"Open",size:"200cr",lead:"Raghav, Ashish, Zeenath",contact:"",next:"Reconnect when valuation drops"},
+  {n:34,co:"Encotec",type:"Sell",status:"Open",size:"25-30cr",lead:"Ashish",contact:"Arun Sarna",next:"Call with Ashish and Arun"},
+  {n:35,co:"Imperative Business Ventures",type:"Raise",status:"Open",size:"466cr",lead:"Libin",contact:"Manisha Kunvar",next:"Intro meeting done"},
+  {n:36,co:"WheaFree",type:"Sell",status:"Open",size:"",lead:"Libin",contact:"Harinder",next:"Approach note almost done"},
+  {n:37,co:"Swastik Pipes",type:"Sell",status:"Open",size:"350cr",lead:"Yohaanne",contact:"Anil Gandhi",next:"MoU discussion, scout buyer"},
+  {n:40,co:"Wellwith",type:"Sell",status:"On Hold",size:"NA",lead:"Raghav (ISB)",contact:"Nikhil Pratap Singh",next:"Sell-side M&A on hold"},
+  {n:41,co:"Wiggles",type:"Sell",status:"Open",size:"NA",lead:"Zeenath",contact:"Richard Liu",next:"Awaiting ITC. Settlement 06 Jul 2026"},
+  {n:42,co:"Infallible Pharma",type:"Sell",status:"Open",size:"NA",lead:"Zeenath",contact:"Promoters",next:"Preparing brief"},
+  {n:43,co:"Infiiloms India",type:"Sell",status:"Open",size:"300cr",lead:"Zeenath",contact:"Vishnu Gupta (Edelweiss SS)",next:"Find buyers. Map socks export opportunity"},
+  {n:45,co:"Nila Cares",type:"Buy",status:"Open",size:"",lead:"Raghav (ISB)",contact:"Aditi Ramnath",next:"EL signed. Map prospective targets"},
+  {n:48,co:"Medipack Global Ventures",type:"Sell",status:"Open",size:"",lead:"Libin",contact:"Rohan Pawar",next:"Get in touch 20/06, share EOI docs"},
+  {n:50,co:"Insolation Energy",type:"Buy",status:"Open",size:"20cr+",lead:"Raghav",contact:"Daksh Jain, Deepak Jain",next:"Send proposal / EL"},
+  {n:51,co:"RMC Switchgear",type:"Buy",status:"Open",size:"20-50cr",lead:"Raghav",contact:"Ankit Agrawal (MD)",next:"Send proposal, commercials, EL"},
+  {n:52,co:"Sealmatic India",type:"Sell",status:"Open",size:"NA",lead:"Raghav",contact:"",next:"Talk to Firoz, site visit Mira Road"},
+  {n:53,co:"TCPL Packaging",type:"Sell",status:"Open",size:"NA",lead:"Raghav",contact:"Firoz Chaudhary",next:"Initial conversation with Ashish"},
+  {n:56,co:"Hindustan Heavy Electricals",type:"Sell",status:"Open",size:"NA",lead:"Ashish",contact:"",next:"Inquire about willingness to sell"},
+  {n:57,co:"Vayudoot Multiservices",type:"Sell",status:"Open",size:"NA",lead:"Yohaanne",contact:"",next:"More info needed"},
+  {n:58,co:"Vivoiz Healthtech",type:"Sell",status:"Open",size:"NA",lead:"Zeenath",contact:"",next:"Get in touch with promoters"},
+  {n:59,co:"The Renal Project",type:"Sell",status:"Open",size:"NA",lead:"Zeenath",contact:"",next:"Set up call"},
+  {n:60,co:"Unified Healthcare",type:"Sell",status:"Open",size:"NA",lead:"Ashish",contact:"",next:"Set up call"},
+  {n:61,co:"Parakh Hospital",type:"Sell",status:"Open",size:"NA",lead:"Ashish",contact:"",next:"Seek meeting with doctor"},
+  {n:62,co:"Oreva",type:"Sell",status:"Open",size:"NA",lead:"Ashish",contact:"",next:"Get promoter connect"},
+  {n:63,co:"G-Mart",type:"Sell",status:"Open",size:"NA",lead:"Zeenath",contact:"",next:"Prepare brief and teaser"},
+  {n:64,co:"Payal Polyplast",type:"Sell",status:"Open",size:"NA",lead:"Ashish",contact:"",next:"Preparing brief"},
+  {n:65,co:"Season Two",type:"Sell",status:"Open",size:"NA",lead:"Nandita",contact:"Nandita",next:"Send corporate profile"}
+];
+
+function renderLeads(data) {
+  document.getElementById('leads-body').innerHTML = data.map(l => `<tr>
+    <td style="color:var(--ink-4);font-size:11px;font-family:var(--mono)">${l.n}</td>
+    <td class="co-name">${l.co}</td>
+    <td><span class="badge ${l.type==='Buy'?'b-buy':l.type==='Sell'?'b-sell':'b-ns'}">${l.type}</span></td>
+    <td style="font-size:11px;white-space:nowrap;font-family:var(--mono)">${l.size||'—'}</td>
+    <td><span class="badge ${l.status==='Open'?'b-open':l.status==='Closed'?'b-closed':'b-hold'}">${l.status}</span></td>
+    <td style="font-size:11px;white-space:nowrap">${l.lead||'—'}</td>
+    <td style="font-size:11px;color:var(--ink-3)">${(l.contact||'—').substring(0,30)}</td>
+    <td class="note">${(l.next||'—').substring(0,80)}</td>
+  </tr>`).join('');
+  document.getElementById('lead-count-label').textContent = data.length + ' leads';
+}
+
+function filterLeads() {
+  const st = document.getElementById('l-status').value;
+  const ty = document.getElementById('l-type').value;
+  const ow = document.getElementById('l-owner').value.toLowerCase();
+  const q = document.getElementById('l-search').value.toLowerCase();
+  renderLeads(LEADS.filter(l =>
+    (!st || l.status === st) &&
+    (!ty || l.type === ty) &&
+    (!ow || l.lead.toLowerCase().includes(ow)) &&
+    (!q || l.co.toLowerCase().includes(q) || (l.next||'').toLowerCase().includes(q))
+  ));
+}
+
+// ── INTENT ──
+const INTENT = [
+  {date:"27-Jun-26",co:"Rainmatter VC (Zerodha)",sector:"Fintech / Deeptech",range:"Any",source:"Antlia reachout",contact:"Dinesh Pai",intent:"Savings, investing, capital markets fintech; climate, health, deeptech"},
+  {date:"24-Jun-26",co:"Saffron Stays",sector:"Leisure & Tourism",range:"na",source:"Economic Times",contact:"",intent:"Luxury Villa portfolio North + Maharashtra. $3.2M raised"},
+  {date:"20-Jun-26",co:"DS Group",sector:"Consumer / Hospitality",range:"1500cr+",source:"Economic Times",contact:"",intent:"Hospitality acquisitions 1500cr, brownfield + greenfield, distressed"},
+  {date:"19-Jun-26",co:"Payal Polyplast",sector:"Specialty Chemicals",range:"NA",source:"From Ashish",contact:"CFO",intent:"Acquisitions in existing sector"},
+  {date:"17-Jun-26",co:"Kaleesuwari Refinery",sector:"Cooking Oil & FMCG",range:"100cr+",source:"Ind Bharat response",contact:"Cheran K – CEO",intent:"Cooking oil brands (not capacity), FMCG food, PAN India, South preferred"},
+  {date:"17-Jun-26",co:"Kalash Seeds",sector:"Agro / Seed Mfg",range:"Upto 100cr",source:"Pallishree response",contact:"Vijay Nikam – GM",intent:"Seed mfg veggies, losses okay, overseas expansion (Indonesia, Egypt, Kenya, Tanzania, Vietnam)"},
+  {date:"9-Jun-26",co:"Deepak Fertilizers",sector:"Industrial Chemicals",range:"",source:"Pallishree response",contact:"Rishi Agarwal",intent:"Horticulture, CAs crops, MH, bio fertilisers, seeds. No mining chemicals"},
+  {date:"4-Jun-26",co:"Adani Group",sector:"T&D / Power",range:">1000cr revenue",source:"Ind Bharat response",contact:"Ankit MD, Priyanshu M&A",intent:"Large deals 1000cr+, T&D power"},
+  {date:"27-May-26",co:"Oriental Structure",sector:"Infra",range:"NA",source:"Inbound Email",contact:"Sourav Kumar",intent:"Distressed — roads, commercial offices, warehousing, hospitality, land"},
+  {date:"27-May-26",co:"Elements SFS",sector:"Energy / Advisory",range:"100-200cr",source:"Amit Jha contact",contact:"Amit Kumar Jha",intent:"25-50MW renewable energy power plant"},
+  {date:"20-May-26",co:"Sid's Farm",sector:"Dairy D2C",range:"",source:"Krishna Khanaiyya",contact:"Tamal Chatterjee – CGO",intent:"Dairy, food grains, cereals, healthy food for children"},
+  {date:"17-May-26",co:"ASK Asset & Wealth Management",sector:"Private Credit",range:"NA",source:"Newspaper",contact:"",intent:"2nd private credit fund 2500cr. EBITDA 14-65cr mid-market"},
+  {date:"12-May-26",co:"Insolation Energy",sector:"Energy Solar",range:"10-20cr",source:"Melcon announcement",contact:"Daksh Jain",intent:"Solar modules, BESS, smart metering, BoS components"},
+  {date:"11-May-26",co:"IndiaRF",sector:"Special Situations",range:"min $55m",source:"Meeting",contact:"Gaurav Arora",intent:"Control investing. No RE/EPC/tobacco/alcohol. Mid-market 22-25% IRR"},
+  {date:"11-May-26",co:"Aster DM Hospital",sector:"Healthcare",range:"2300cr invest",source:"Meeting",contact:"Robin Maloo",intent:"South India + MH/Odisha/TN expansion, 150+ beds"},
+  {date:"11-May-26",co:"Bikaji Foods FO",sector:"FMCG",range:"",source:"Newspaper",contact:"",intent:"Bhujia, namkeen, FMCG snacks"},
+  {date:"11-May-26",co:"Metro Brands",sector:"Footwear",range:"NA",source:"Baggit reachout",contact:"Nissan Joseph",intent:"Footwear businesses leveraging their network"},
+  {date:"6-May-26",co:"RMC Switchgears",sector:"Electricals",range:"20-50cr",source:"Melcon announcement",contact:"Ankit Agrawal – MD",intent:"LT/HT switchgear, CPRI/ERDA certs, North India preferred"},
+  {date:"27-Apr-26",co:"Saatvik Green Energy",sector:"Electricals",range:"NA",source:"Melcon transaction",contact:"Chetan Dhundele",intent:"PCB mfg (India Circuits), smart metering, capacitors, switchgear"},
+  {date:"27-Apr-26",co:"EIH Limited (Oberoi)",sector:"Hospitality",range:"",source:"Baywood reachout",contact:"Justin Khodaiji",intent:"Hotels and resorts complementing portfolio"},
+  {date:"27-Apr-26",co:"AVC (Arthvritt)",sector:"Healthcare",range:"",source:"Arthvritt",contact:"",intent:"250+ beds hospital, Navi Mumbai focus"},
+  {date:"9-Apr-26",co:"Max Healthcare",sector:"Healthcare",range:"",source:"Newspaper",contact:"",intent:"Super-speciality hospitals 250+ beds"},
+  {date:"6-Apr-26",co:"Bajaj Consumer Care",sector:"FMCG Hair Oil",range:"",source:"Tirumalla call",contact:"Aakash Gupta",intent:"Asset-light FMCG, hair oil adjacent"},
+  {date:"30-Mar-26",co:"Signum Hotels",sector:"Hospitality",range:"20-60 rooms",source:"Baywood reachout",contact:"Mehul Sharma – CEO",intent:"Hotel mgmt/lease 15-20yr or hotel mgmt co with 10-15 hotel portfolio"},
+  {date:"25-Mar-26",co:"Ruloans Distribution",sector:"Financial Services",range:"100cr+ revenue",source:"BLS Ruloans call",contact:"Ram Dabade (CFO)",intent:"Asset-light, 100cr+ rev, HQ Mumbai, promoters to stay"},
+  {date:"7-Mar-26",co:"Encalm Hospitality",sector:"Hospitality",range:"50cr+",source:"Email",contact:"",intent:"Hotels — mgmt contracts, franchisees. Luxury. Beyond South"},
+  {date:"7-Mar-26",co:"Dabur",sector:"FMCG",range:"",source:"Newspaper",contact:"",intent:"Herbal brands, natural, Kirana presence"},
+  {date:"5-Mar-26",co:"Asian Paints",sector:"Paints",range:"",source:"Newspaper",contact:"",intent:"Tech acquisitions for paints industry"},
+  {date:"24-Feb-26",co:"Aster DM Hospital (Feb)",sector:"Healthcare",range:"2300cr invest",source:"Newspaper",contact:"Robin Maloo",intent:"150+ beds. Mumbai/Pune/Chennai/Delhi NCR"},
+  {date:"24-Mar-26",co:"Wyndham Hotels (Ramada)",sector:"Hospitality",range:"NA",source:"Wyndham Call",contact:"Shirat Mathur",intent:"Hospitality brands only. Min 1000 rooms with brand"},
+  {date:"21-Jan-26",co:"Havells",sector:"Electrical",range:"",source:"Newspaper",contact:"",intent:"Cables capacity near max utilisation, possible M&A"},
+  {date:"13-Jan-26",co:"APAR Industries",sector:"Power Accessories",range:"",source:"Gupta Power",contact:"Benoy Varghese",intent:"Power cable & connectors company"},
+  {date:"9-Jan-26",co:"HFCL",sector:"Communications / Defence",range:"NA",source:"Quadrant",contact:"Sunil Seth",intent:"Triple revenue growth, inorganic in defence"},
+  {date:"29-Dec-25",co:"InterGlobe Hotels (Ibis)",sector:"Hospitality",range:"",source:"Call",contact:"Sameer Garg",intent:"200+ key hotels"},
+  {date:"9-Dec-25",co:"Chalet Hotels",sector:"Hospitality",range:"200+ keys",source:"Email",contact:"Karuna Nasta",intent:"Greenfield metro + brownfield drivable from tier-1"},
+  {date:"2-Dec-25",co:"Samhi Hotels",sector:"Hospitality",range:"150+ keys",source:"Email",contact:"Rajat Mehra",intent:"150+ key hotels"},
+  {date:"2-Dec-25",co:"Ventive Hospitality",sector:"Hospitality",range:"",source:"Email",contact:"Paresh Bafna",intent:"Strategic real estate, hotel assets"},
+  {date:"13-Oct-25",co:"Burman Family Holdings",sector:"Healthcare PE",range:"$15-150m",source:"Email",contact:"",intent:"Healthcare, manufacturing, financial services"},
+  {date:"12-Oct-25",co:"Invascent",sector:"Healthcare PE",range:"$40-130m",source:"Email",contact:"",intent:"Pharma, healthcare delivery, medical devices"},
+  {date:"14-Oct-25",co:"True North Private Credit",sector:"Private Credit",range:"",source:"Meeting",contact:"Ojas Acharya",intent:"25cr+ EBITDA, sector agnostic, cash flow focused"},
+  {date:"28-Oct-25",co:"Edelweiss Alternates",sector:"Special Situations",range:"",source:"Reddson meeting",contact:"Vishnu Gupta",intent:"Special situations — succession, secondary sale, fund expiry"},
+  {date:"7-Nov-25",co:"Northern Arc Capital",sector:"Private Credit",range:"",source:"Reddson meeting",contact:"Arpan Majumder",intent:"MSME, mid-market. No RE, no non-ESG"},
+  {date:"16-Oct-25",co:"TVS Capital",sector:"NBFC",range:"250-300cr+",source:"Reddson email",contact:"Naveen Unni",intent:"NBFC with RBI license, NOF 10-20cr"},
+  {date:"6-Jun-25",co:"Piramal Alternatives",sector:"Private Equity / Credit",range:"150cr",source:"LinkedIn",contact:"",intent:"150cr business generating cashflows. Long tenure loan"},
+  {date:"16-Jul-25",co:"Aikyam Capital",sector:"AIF",range:"100cr",source:"Ashish",contact:"",intent:"Power equipment, solar, cables, transformers"},
+  {date:"5-Nov-25",co:"Paragon Partners",sector:"PE",range:"",source:"Call",contact:"Mitesh Thakur",intent:"Growth capital, Series B+, precision parts, IBC/NCLT assets"},
+  {date:"24-Feb-26",co:"Wyndham",sector:"Hospitality",range:"NA",source:"Call",contact:"Sharad Bhargava",intent:"Hospitality brands. Min 1000 rooms. Franchise or distribution"}
+];
+
+function renderIntent(data) {
+  document.getElementById('intent-body').innerHTML = data.map(i => `<tr>
+    <td style="font-size:11px;white-space:nowrap;color:var(--ink-3);font-family:var(--mono)">${i.date||'—'}</td>
+    <td class="co-name">${i.co}</td>
+    <td style="font-size:11px;color:var(--ink-3)">${(i.sector||'—').substring(0,25)}</td>
+    <td style="font-size:11px;white-space:nowrap;font-family:var(--mono)">${i.range||'—'}</td>
+    <td style="font-size:11px;color:var(--ink-3)">${(i.source||'—').substring(0,22)}</td>
+    <td style="font-size:11px;color:var(--ink-3)">${(i.contact||'—').substring(0,22)}</td>
+    <td class="note">${(i.intent||'—').substring(0,110)}</td>
+  </tr>`).join('');
+  document.getElementById('intent-count-label').textContent = data.length + ' signals';
+}
+
+function filterIntent() {
+  const sec = document.getElementById('i-sector').value;
+  const q = document.getElementById('i-search').value.toLowerCase();
+  renderIntent(INTENT.filter(i =>
+    (!sec || i.sector === sec) &&
+    (!q || i.co.toLowerCase().includes(q) || i.intent.toLowerCase().includes(q) || (i.sector||'').toLowerCase().includes(q))
+  ));
+}
+
+function populateIntentSectors() {
+  const sel = document.getElementById('i-sector');
+  const sectors = [...new Set(INTENT.map(i => i.sector).filter(Boolean))].sort();
+  sectors.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s.substring(0, 30); sel.appendChild(o); });
+}
+
+// ── PEOPLE ──
+function buildPeople() {
+  const people = {
+    Zeenath: {role:'Partner',av:'av-Z',tasks:0,leads:0,open:0},
+    Ashish: {role:'Founding Partner',av:'av-A',tasks:0,leads:0,open:0},
+    Raghav: {role:'Associate M&A',av:'av-R',tasks:0,leads:0,open:0},
+    Yohaanne: {role:'Team',av:'av-Y',tasks:0,leads:0,open:0},
+    Libin: {role:'Team',av:'av-L',tasks:0,leads:0,open:0},
+    Nandita: {role:'Team',av:'av-N',tasks:0,leads:0,open:0}
+  };
+  TASKS.forEach(t => {
+    Object.keys(people).forEach(p => { if ((t.Name||'').toLowerCase().includes(p.toLowerCase())) people[p].tasks++; });
+  });
+  LEADS.forEach(l => {
+    Object.keys(people).forEach(p => {
+      if (l.lead.toLowerCase().includes(p.toLowerCase())) {
+        people[p].leads++;
+        if (l.status === 'Open') people[p].open++;
+      }
+    });
+  });
+  document.getElementById('people-grid').innerHTML = Object.entries(people).map(([name, d]) => `
+    <div class="person-card">
+      <div class="person-hdr">
+        <div class="person-av ${d.av}" style="font-size:14px;font-weight:700">${name[0]}</div>
+        <div><div class="person-name">${name}</div><div class="person-role">${d.role}</div></div>
+      </div>
+      <div class="person-stats">
+        <div class="ps"><div class="ps-n">${d.tasks}</div><div class="ps-l">Tasks</div></div>
+        <div class="ps"><div class="ps-n">${d.leads}</div><div class="ps-l">Leads</div></div>
+        <div class="ps"><div class="ps-n">${d.open}</div><div class="ps-l">Open</div></div>
+      </div>
+    </div>`).join('');
+}
+
+// ── ACCO ──
+const ACCO_SYSTEM = `You are Acco, the M&A deal intelligence assistant for Accomplir Advisors — a Mumbai-based boutique investment bank specialising in mid-market M&A. Today is 27 June 2026.
+
+LEADS (65 total):
+${LEADS.map(l => `#${l.n} ${l.co} | ${l.type}-side | ${l.status} | ${l.size} | Lead: ${l.lead} | Contact: ${l.contact} | Next: ${l.next}`).join('\n')}
+
+INTENT SIGNALS (113 total — top 47 shown):
+${INTENT.map(i => `${i.date} | ${i.co} | ${i.sector} | Range: ${i.range} | Source: ${i.source} | Contact: ${i.contact} | Intent: ${i.intent.substring(0,120)}`).join('\n')}
+
+KEY MATCHES TO KNOW:
+- Saatvik Green Energy ↔ India Circuits (PCB mfg, smart metering, capacitors, switchgear — perfect match)
+- Rainmatter VC (Zerodha) ↔ Antlia Fintech (fintech / BC / payments match)
+- Aster DM Hospital ↔ Ravina Healthcare, Parakh Hospital, The Renal Project, Unified Healthcare (150+ beds, metro cities)
+- BLS International ↔ Antlia Fintech (BC businesses, financial services distribution)
+- Kalash Seeds ↔ agro leads (seed mfg, 100cr range)
+- Adani Group ↔ large industrial leads (T&D power, 1000cr+)
+
+TASKS: Available live from Google Sheets (team will inject task data into questions).
+
+TEAM: Zeenath (Partner), Ashish (Founding Partner), Raghav (Associate M&A), Yohaanne, Libin, Nandita.
+
+RULES:
+- Be direct, specific, sharp — name companies, people, amounts, dates
+- Keep answers under 8 lines unless detail is truly needed
+- For LOG entries: extract who/company/what happened/what next and confirm
+- For MATCHING: look for sector + size + geography overlap
+- Always end with a suggested next action when relevant
+- You are reading live data; tasks refresh on page load`;
+
+let msgHistory = [];
+
+function askAcco(txt) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('[onclick="show(\'acco\',this)"]')[0]?.classList.add('active');
+  show('acco', null);
+  document.getElementById('acco-inp').value = txt;
+  send();
+}
+
+async function send() {
+  const inp = document.getElementById('acco-inp');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  inp.value = '';
+
+  const msgs = document.getElementById('msgs');
+  const um = document.createElement('div');
+  um.className = 'msg user';
+  um.innerHTML = `<div class="msg-av user">U</div><div class="bubble">${txt.replace(/</g,'&lt;')}</div>`;
+  msgs.appendChild(um);
+
+  const td = document.createElement('div');
+  td.className = 'msg acco';
+  td.innerHTML = `<div class="msg-av">A</div><div class="bubble"><span class="typing"><span></span><span></span><span></span></span></div>`;
+  msgs.appendChild(td);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  msgHistory.push({ role: 'user', content: txt });
+
+  // Inject live task summary into the prompt if tasks are loaded
+  let taskContext = '';
+  if (TASKS.length > 0) {
+    taskContext = '\n\nLIVE TASKS FROM GOOGLE SHEETS:\n' +
+      TASKS.map(t => `${t.Name}|${t.Project}|${t.Task}|due:${t['Due Date']||'none'}|${t.Status||'no status'}|${t.Notes||''}`).join('\n');
+  }
+
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 600,
+        system: ACCO_SYSTEM + taskContext,
+        messages: msgHistory
+      })
+    });
+    const d = await r.json();
+    const reply = d.content?.[0]?.text || "Couldn't get a response — try again.";
+    td.innerHTML = `<div class="msg-av">A</div><div class="bubble">${reply.replace(/\n/g,'<br>').replace(/</g,'&lt;').replace(/&lt;br>/g,'<br>')}</div>`;
+    msgHistory.push({ role: 'assistant', content: reply });
+    if (msgHistory.length > 20) msgHistory = msgHistory.slice(-20);
+  } catch(e) {
+    td.innerHTML = `<div class="msg-av">A</div><div class="bubble">Connection issue — check your internet and try again.</div>`;
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ── INIT ──
+renderLeads(LEADS);
+renderIntent(INTENT);
+populateIntentSectors();
+
+fetchTasks().then(() => {
+  buildPeople();
+});
+</script>
+</body>
+</html>
