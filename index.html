@@ -552,9 +552,7 @@ let msgHistory = [];
 async function signIn() {
   try {
     await msalInstance.initialize();
-    const result = await msalInstance.loginPopup({ scopes: SCOPES });
-    msalInstance.setActiveAccount(result.account);
-    onSignedIn(result.account);
+    await msalInstance.loginRedirect({ scopes: SCOPES });
   } catch(e) {
     console.error('Sign in failed:', e);
     alert('Sign in failed. Make sure you are using your Accomplir Microsoft account.');
@@ -569,22 +567,25 @@ async function getToken() {
     return result.accessToken;
   } catch(e) {
     try {
-      const result = await msalInstance.acquireTokenPopup({ scopes: SCOPES });
-      return result.accessToken;
+      await msalInstance.acquireTokenRedirect({ scopes: SCOPES });
+      return null;
     } catch(e2) { return null; }
   }
 }
 
 async function signOut() {
   await msalInstance.initialize();
-  await msalInstance.logoutPopup();
-  document.getElementById('signin').style.display = 'flex';
-  document.getElementById('app').classList.remove('visible');
+  await msalInstance.logoutRedirect();
 }
 
 async function checkExistingSession() {
   await msalInstance.initialize();
-  await msalInstance.handleRedirectPromise();
+  const result = await msalInstance.handleRedirectPromise();
+  if (result && result.account) {
+    msalInstance.setActiveAccount(result.account);
+    onSignedIn(result.account);
+    return;
+  }
   const accounts = msalInstance.getAllAccounts();
   if (accounts.length > 0) {
     msalInstance.setActiveAccount(accounts[0]);
