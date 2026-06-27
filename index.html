@@ -530,8 +530,7 @@ td.note { color: var(--text-3); font-size: 12px; max-width: 200px; line-height: 
 const CLIENT_ID = '3a293653-f28e-473f-a594-0998638f3d84';
 const TENANT_ID = 'a92361de-7437-4ea2-ba19-9bfe6f32fc83';
 const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-h3CRESg-c-6PQkkNpYb-kyD4eUheBbiAD-ae6h-b6CoNJn9s9JoIOfrNku5zkShSsqdiCjABYUZE/pub?output=csv';
-const LEAD_FILE_ID = 'IQAlJAuPO-w4RKgdKE3I7bLRASf6bUyo8WsZirM5ZcgUOfI';
-const INTENT_FILE_ID = 'IQCh32MAmHsBQ6j81keE1QA9Ac9HHkxWXckOoEvF16moitU';
+// Zeenath's OneDrive - files shared with all team members
 const ZEENATH_DRIVE_ID = 'b!1W9KBzwT2U-g11vQnhoF84K9CMzPESpOqfjVwD7KgA3ecz4fD4n2S6CKmviOs3to';
 const LEAD_ITEM_ID = '01EKQ5GGZFEQFY6O7MHBCKQHJIJXEO3MWR';
 const INTENT_ITEM_ID = '01EKQ5GG5B35RQBGD3AFB2R7GWI6CNKAB5';
@@ -609,7 +608,11 @@ async function graphFetch(url) {
   TOKEN = await getToken();
   if (!TOKEN) return null;
   const r = await fetch(url, { headers: { Authorization: `Bearer ${TOKEN}` } });
-  if (!r.ok) { console.error('Graph error:', r.status, await r.text()); return null; }
+  if (r.status === 403) {
+    console.warn('Access denied to file - ensure it is shared with your account:', url);
+    return null;
+  }
+  if (!r.ok) { console.error('Graph error:', r.status, url); return null; }
   return r.json();
 }
 
@@ -709,7 +712,10 @@ async function fetchLeads() {
     document.getElementById('ctx-leads').textContent = LEADS.length + ' leads';
     document.getElementById('leads-sub').textContent = `Live from OneDrive · ${LEADS.length} leads · updated now`;
     document.getElementById('s-leads').textContent = LEADS.filter(l=>l.status==='Open').length;
-  } catch(e) { console.error('Leads fetch error:', e); }
+  } catch(e) {
+    console.error('Leads fetch error:', e);
+    document.getElementById('leads-body').innerHTML = '<tr><td colspan="8" style="padding:20px;color:var(--red);font-size:13px">Could not load leads — ask Zeenath to share the Lead Tracker file with your Microsoft account.</td></tr>';
+  }
 }
 
 // ── INTENT (OneDrive via Graph) ──
@@ -733,7 +739,10 @@ async function fetchIntent() {
     document.getElementById('ctx-intent').textContent = INTENT.length + ' signals';
     document.getElementById('intent-sub').textContent = `Live from OneDrive · ${INTENT.length} signals · updated now`;
     document.getElementById('s-intent').textContent = INTENT.length;
-  } catch(e) { console.error('Intent fetch error:', e); }
+  } catch(e) {
+    console.error('Intent fetch error:', e);
+    document.getElementById('intent-body').innerHTML = '<tr><td colspan="7" style="padding:20px;color:var(--red);font-size:13px">Could not load intent signals — ask Zeenath to share the Intent Tracker file with your Microsoft account.</td></tr>';
+  }
 }
 
 // ── DATES ──
@@ -1013,7 +1022,7 @@ RULES:
 - Always suggest a next action.`;
 
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
+    const r = await fetch('/api/chat', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:600, system:sys, messages:msgHistory })
     });
