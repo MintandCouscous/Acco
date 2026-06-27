@@ -625,13 +625,16 @@ async function getExcelRows(driveId, itemId) {
   const range = await graphFetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`);
   if (!range || !range.values || range.values.length < 2) return [];
 
-  // Find the real header row — look for the row with the most non-empty cells
-  // (skips "Last updated on" banner rows at the top)
+  // Find the real header row — prefer a row with named headers over "Column1, Column2" etc
   let headerRowIdx = 0;
-  let maxCells = 0;
+  let bestScore = -1;
   for (let i = 0; i < Math.min(10, range.values.length); i++) {
-    const nonEmpty = range.values[i].filter(c => String(c).trim()).length;
-    if (nonEmpty > maxCells) { maxCells = nonEmpty; headerRowIdx = i; }
+    const cells = range.values[i].map(c => String(c).trim());
+    const nonEmpty = cells.filter(c => c).length;
+    const nonGeneric = cells.filter(c => c && !c.match(/^Column\d+$/i)).length;
+    // Score: prefer rows with real named columns over "Column1" placeholders
+    const score = nonGeneric * 10 + nonEmpty;
+    if (score > bestScore) { bestScore = score; headerRowIdx = i; }
   }
 
   const headers = range.values[headerRowIdx].map(h => String(h).trim());
@@ -737,13 +740,13 @@ async function fetchIntent() {
     if (!rows.length) { console.warn('No intent rows'); return; }
     console.log('Intent headers:', Object.keys(rows[0]));
     INTENT = rows.map(r => ({
-      date: r['Date disovered'] || r['Date'] || r['date'] || r['Date spotted'] || '',
+      date: r['Date disovered'] || r['Date discovered'] || r['Date'] || r['date'] || r['Date spotted'] || '',
       co: r['Investor'] || r['Company'] || r['company'] || r['investor'] || '',
-      sector: r['Sector'] || r['sector'] || '',
-      range: r['Deal range'] || r['Range'] || r['deal range'] || '',
-      source: r['Intent Source'] || r['Source'] || r['source'] || '',
+      sector: r['Sector'] || r['sector'] || r['Primary Product'] || '',
+      range: r['Deal range'] || r['Range'] || r['deal range'] || r['Deal Range'] || '',
+      source: r['Intent Source'] || r['Source'] || r['source'] || r['Intent spotted at'] || '',
       contact: r['Person'] || r['Contact'] || r['contact'] || '',
-      intent: r['Products Intent on'] || r['Intent'] || r['intent'] || r['Sectors Intent on'] || ''
+      intent: r['Sectors Intent on'] || r['Products Intent on'] || r['Intent'] || r['intent'] || r['Products intent on'] || ''
     })).filter(r => r.co);
     renderIntent(INTENT);
     populateIntentSectors();
