@@ -624,10 +624,22 @@ async function getExcelRows(driveId, itemId) {
   // Get used range
   const range = await graphFetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`);
   if (!range || !range.values || range.values.length < 2) return [];
-  const headers = range.values[0].map(h => String(h).trim());
-  return range.values.slice(1).map(row => {
+
+  // Find the real header row — look for the row with the most non-empty cells
+  // (skips "Last updated on" banner rows at the top)
+  let headerRowIdx = 0;
+  let maxCells = 0;
+  for (let i = 0; i < Math.min(10, range.values.length); i++) {
+    const nonEmpty = range.values[i].filter(c => String(c).trim()).length;
+    if (nonEmpty > maxCells) { maxCells = nonEmpty; headerRowIdx = i; }
+  }
+
+  const headers = range.values[headerRowIdx].map(h => String(h).trim());
+  console.log('Real headers found at row', headerRowIdx, ':', headers);
+
+  return range.values.slice(headerRowIdx + 1).map(row => {
     const obj = {};
-    headers.forEach((h, i) => { obj[h] = String(row[i] || '').trim(); });
+    headers.forEach((h, i) => { if (h) obj[h] = String(row[i] || '').trim(); });
     return obj;
   }).filter(r => Object.values(r).some(v => v));
 }
