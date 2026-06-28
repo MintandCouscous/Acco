@@ -676,6 +676,51 @@ tr { transition: background 0.1s; }
 .intel-title { font-size: 11px; font-weight: 800; color: #aaa; text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
 .intel-title span { width: 8px; height: 8px; background: #4ade80; border-radius: 50%; box-shadow: 0 0 8px rgba(74,222,128,0.6); display: inline-block; animation: pulse 2s infinite; }
 
+
+/* ── DAILY BRIEF ── */
+.brief-section { margin-bottom: 36px; }
+.brief-section-title {
+  font-size: 10px; font-weight: 800; color: #1a6e4a;
+  text-transform: uppercase; letter-spacing: 0.16em;
+  padding-bottom: 10px; border-bottom: 2px solid #e8f5ee;
+  margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+.brief-section-title::before { content:''; width:8px;height:8px;background:#1a6e4a;border-radius:50%;display:inline-block; }
+.brief-item {
+  padding: 16px 0; border-bottom: 1px solid #f5f2ec;
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 16px; align-items: start; transition: all 0.15s;
+}
+.brief-item:hover { padding-left: 6px; }
+.brief-item:last-child { border-bottom: none; }
+.brief-item-badge {
+  font-size: 10px; font-weight: 700; padding: 3px 10px;
+  border-radius: 20px; white-space: nowrap; margin-top: 2px;
+}
+.brief-item-body {}
+.brief-item-co { font-size: 15px; font-weight: 700; color: #0a0a0a; margin-bottom: 4px; }
+.brief-item-desc { font-size: 13px; color: #555; line-height: 1.6; }
+.brief-item-meta { font-size: 11px; color: #aaa; margin-top: 6px; }
+.brief-item-match { font-size: 11px; color: #1a6e4a; font-weight: 600; margin-top: 4px; }
+.brief-add { font-size: 11px; font-weight: 700; color: white; background: #0a2a18; border: none; border-radius: 20px; padding: 5px 14px; cursor: pointer; white-space: nowrap; margin-top: 2px; transition: all 0.15s; }
+.brief-add:hover { background: #1a6e4a; }
+.brief-add.added { background: #1a6e4a; color: #4ade80; }
+.brief-summary {
+  background: linear-gradient(135deg, #f0faf5, #fdf8f0);
+  border: 1.5px solid #e8f5ee; border-radius: 14px;
+  padding: 20px 24px; margin-bottom: 32px; font-size: 14px;
+  color: #2a2a2a; line-height: 1.8;
+}
+.brief-stat-row {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 32px;
+}
+.brief-stat-box {
+  background: white; border: 1.5px solid #f0ede8; border-radius: 12px;
+  padding: 16px; text-align: center;
+}
+.brief-stat-box-num { font-family: var(--serif); font-size: 32px; color: #0a2a18; }
+.brief-stat-box-label { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; font-weight: 600; }
+
 </style>
 </head>
 <body>
@@ -759,7 +804,11 @@ tr { transition: background 0.1s; }
       </div>
       <hr class="nav-sep">
       <div class="nav-group">
-        <div class="nav-label">Assistant</div>
+        <div class="nav-label">Intelligence</div>
+        <button class="nav-btn" onclick="show('brief',this)" id="nav-brief">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          Daily Brief
+        </button>
         <button class="nav-btn" onclick="show('acco',this)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
           Ask Acco
@@ -964,6 +1013,35 @@ tr { transition: background 0.1s; }
       <div id="view-people" class="view">
         <div class="page-hdr"><div class="page-title">Team</div><div class="page-sub">Task and lead ownership across Accomplir</div></div>
         <div class="people-grid" id="people-grid"></div>
+      </div>
+
+      <!-- DAILY BRIEF -->
+      <div id="view-brief" class="view" style="padding:0;background:white">
+
+        <!-- Brief header -->
+        <div style="background:linear-gradient(135deg,#0a2a18,#1a4a28);padding:40px 48px 32px;position:relative;overflow:hidden">
+          <div style="position:absolute;top:-60px;right:-60px;width:300px;height:300px;background:radial-gradient(circle,rgba(74,222,128,0.1) 0%,transparent 70%);border-radius:50%"></div>
+          <div style="position:absolute;bottom:-40px;left:20%;width:200px;height:200px;background:radial-gradient(circle,rgba(212,168,75,0.08) 0%,transparent 70%);border-radius:50%"></div>
+          <div style="position:relative;z-index:1;display:flex;align-items:flex-start;justify-content:space-between">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:rgba(74,222,128,0.8);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:12px">Accomplir Advisors · Deal Intelligence</div>
+              <div style="font-family:var(--serif);font-size:36px;color:white;letter-spacing:-1px;line-height:1" id="brief-title">Daily M&A Brief</div>
+              <div style="font-size:13px;color:rgba(255,255,255,0.45);margin-top:8px" id="brief-date">—</div>
+            </div>
+            <button onclick="generateBrief()" id="brief-btn" style="background:rgba(74,222,128,0.15);border:1.5px solid rgba(74,222,128,0.3);color:#4ade80;padding:10px 22px;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all 0.2s;white-space:nowrap">
+              ⚡ Generate brief
+            </button>
+          </div>
+        </div>
+
+        <!-- Brief content -->
+        <div id="brief-content" style="padding:40px 48px;max-width:900px">
+          <div style="text-align:center;padding:60px 0;color:#bbb">
+            <div style="font-size:32px;margin-bottom:16px">📰</div>
+            <div style="font-size:15px;font-weight:500;color:#888;margin-bottom:8px">No brief generated yet</div>
+            <div style="font-size:13px;color:#bbb">Click "Generate brief" to pull today's M&A intelligence from across Indian business news.</div>
+          </div>
+        </div>
       </div>
 
       <!-- ACCO -->
@@ -2154,7 +2232,7 @@ function refreshQuote(time) {
 
 
 
-// ── NEWS SCANNER ──
+// ── NEWS SCANNER (RSS-powered, ~3 cents per scan) ──
 async function scanNewsForSignals() {
   const btn = document.getElementById('scan-btn');
   const bar = document.getElementById('live-intel-bar');
@@ -2163,99 +2241,110 @@ async function scanNewsForSignals() {
   btn.textContent = '⚡ Scanning...';
   btn.classList.add('scanning');
   bar.style.display = 'block';
-  inner.innerHTML = '<div class="intel-scanning"><div class="spin"></div>Scanning Economic Times, Mint, Business Standard, investor announcements...</div>';
+  inner.innerHTML = '<div class="intel-scanning"><div class="spin"></div>Pulling fresh headlines from ET, Mint, Business Standard, VCCircle, Inc42...</div>';
 
-  // Build context of existing intent signals to avoid duplicates
-  const existingCos = INTENT.map(i => i.co).join(', ');
-  const existingLeads = LEADS.map(l => l.co).join(', ');
+  try {
+    // ── STEP 1: Fetch RSS headlines (free, via our proxy) ──
+    const rssResp = await fetch('/api/rss');
+    if (!rssResp.ok) throw new Error('RSS fetch failed: ' + rssResp.status);
+    const rssData = await rssResp.json();
+    const articles = rssData.articles || [];
 
-  const prompt = `You are scanning Indian financial news to find fresh M&A intent signals for Accomplir Advisors, a Mumbai-based boutique M&A investment bank.
+    if (!articles.length) {
+      inner.innerHTML = '<div style="padding:20px;color:#aaa;font-size:13px">Could not fetch news feeds. Try again shortly.</div>';
+      btn.textContent = '⚡ Scan news'; btn.classList.remove('scanning'); return;
+    }
 
-EXISTING SIGNALS (do not repeat these): ${existingCos.substring(0,500)}
-EXISTING LEADS (match against these): ${existingLeads.substring(0,500)}
+    inner.innerHTML = `<div class="intel-scanning"><div class="spin"></div>Analysing ${articles.length} headlines for M&A signals...</div>`;
 
-Today is ${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}.
+    // ── STEP 2: Send headlines to Claude for analysis (no web search, just text) ──
+    const existingCos = INTENT.slice(0,30).map(i => i.co).join(', ');
+    const existingLeads = LEADS.map(l => l.co).join(', ');
+    const today = new Date().toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
 
-Search specifically for news from the LAST 1-3 DAYS ONLY (${new Date(Date.now()-86400000).toLocaleDateString('en-IN',{day:'2-digit',month:'long'})} to today). Do not return older news.
+    // Format headlines as compact text
+    const headlineText = articles.map((a,i) =>
+      `[${i+1}] ${a.source} | ${new Date(a.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})} | ${a.title}${a.description ? ' — ' + a.description.substring(0,120) : ''}`
+    ).join('
+');
 
-Search these sources: Economic Times (economictimes.indiatimes.com), Mint (livemint.com), Business Standard (business-standard.com), VCCircle (vccircle.com), Moneycontrol (moneycontrol.com), Inc42 (inc42.com), Deal Street Asia.
+    const prompt = `Today is ${today}. You are scanning Indian business news for Accomplir Advisors, a Mumbai boutique M&A bank.
 
-Look for:
-1. Indian companies announcing M&A intent or completed acquisitions in the last 1-3 days
-2. PE/VC funds deploying capital or announcing new mandates THIS WEEK
-3. Hospital groups, hotel chains, industrials, FMCG, fintech, EV companies looking to buy or raise
-4. Earnings calls or investor days where acquisition plans were mentioned recently
-5. Any "looking to acquire", "in talks to buy", "exploring strategic options" news from the last 72 hours
+OUR EXISTING LEADS: ${existingLeads.substring(0,600)}
+EXISTING INTENT SIGNALS: ${existingCos.substring(0,400)}
 
-PRIORITY: fresh signals from today and yesterday over anything older. If you find something from today, lead with it.
+Below are ${articles.length} fresh headlines from the last 72 hours from ET, Mint, Business Standard, VCCircle, Inc42:
 
-For each signal, respond ONLY with a JSON array:
+${headlineText}
+
+Analyse these headlines and extract 6-9 M&A intent signals. Look for:
+- Companies announcing acquisitions, looking to buy, "in talks", "exploring options"
+- PE/VC firms announcing new funds or deployment mandates
+- Companies with excess capital or capex plans that signal M&A appetite
+- Sector consolidation trends (hospitals, hotels, FMCG, industrials, fintech, EV)
+- Fundraises where the money will be used for acquisitions
+- Earnings/investor calls mentioning inorganic growth
+
+IMPORTANT: Also flag signals where sector trends (not just direct M&A news) suggest acquisition appetite. E.g. "Hospital sector seeing capacity crunch" = hospitals looking to acquire.
+
+Return ONLY a valid JSON array, no markdown, no explanation:
 [
   {
     "company": "Company name",
     "sector": "Sector",
-    "intent": "Specific acquisition intent — what exactly they want to buy, size, geography",
-    "range": "Deal size if mentioned (in Cr or USD)",
+    "intent": "Specific what they want — geography, size, type of asset, be precise",
+    "range": "Deal size if mentioned",
     "source": "ET/Mint/BS/VCCircle/Inc42",
-    "contact": "",
     "date": "${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-')}",
-    "match": "Name of matching company from our leads/signals list, or empty string",
-    "age": "today/yesterday/2 days ago"
+    "match": "Name of our lead or intent signal this could match, or empty string",
+    "age": "today/yesterday/recent",
+    "headline_ref": "Brief quote from the headline this came from"
   }
-]
+]`;
 
-Return 6-9 signals, prioritised by recency. Only return the JSON array, nothing else.`;
-
-  try {
     const r = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 2000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        system: 'You are a financial news scanner. Always search the web before responding. Return only valid JSON array.',
+        system: 'You are a precise financial analyst. Extract M&A signals from news. Return only valid JSON array.',
         messages: [{ role: 'user', content: prompt }]
       })
     });
     const d = await r.json();
-
-    // Extract text from response (may have tool use blocks)
     let text = '';
-    if (d.content) {
-      for (const block of d.content) {
-        if (block.type === 'text') text += block.text;
-      }
-    }
+    if (d.content) d.content.forEach(b => { if (b.type === 'text') text += b.text; });
 
-    // Parse JSON
     let signals = [];
     try {
       const match = text.match(/\[[\s\S]*\]/);
       if (match) signals = JSON.parse(match[0]);
-    } catch(e) {
-      console.warn('Parse error:', e, text.substring(0,200));
-    }
+    } catch(e) { console.warn('Parse error:', e); }
 
     if (!signals.length) {
-      inner.innerHTML = '<div style="padding:20px;color:#aaa;font-size:13px">No new signals found right now. Try again in a few hours.</div>';
-      btn.textContent = '⚡ Scan news';
-      btn.classList.remove('scanning');
-      return;
+      inner.innerHTML = `<div style="padding:20px;color:#aaa;font-size:13px">No strong M&A signals found in today's ${articles.length} headlines. Try again later.</div>`;
+      btn.textContent = '⚡ Scan news'; btn.classList.remove('scanning'); return;
     }
 
-    // Render signals
-    const today = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).replace(/ /g,'-');
-    // Sort: today first, then yesterday, then recent
-    const ageOrder = { today: 0, yesterday: 1 };
+    // Sort: today first
+    const ageOrder = { today: 0, yesterday: 1, recent: 2 };
     signals.sort((a,b) => (ageOrder[a.age]??2) - (ageOrder[b.age]??2));
+
     inner.innerHTML = `
-      <div class="intel-title"><span></span>Fresh signals — last 72 hours · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} · ${signals.filter(s=>s.age==='today').length} from today</div>
+      <div class="intel-title">
+        <span></span>
+        ${signals.length} signals from ${articles.length} headlines · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} · Sources: ET, Mint, BS, VCCircle, Inc42
+        <span style="margin-left:auto;font-size:10px;color:#aaa;font-style:italic;font-weight:400">~₹2-3 per scan</span>
+      </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
         ${signals.map((s,idx) => {
-          const ageBadge = s.age === 'today' ? '<span style="font-size:9px;font-weight:800;color:white;background:#1a6e4a;padding:2px 7px;border-radius:20px;letter-spacing:0.08em">TODAY</span>'
-            : s.age === 'yesterday' ? '<span style="font-size:9px;font-weight:800;color:#5a2a00;background:#ffe8cc;padding:2px 7px;border-radius:20px;letter-spacing:0.08em">YESTERDAY</span>'
+          const ageBadge = s.age === 'today'
+            ? '<span style="font-size:9px;font-weight:800;color:white;background:#1a6e4a;padding:2px 7px;border-radius:20px;letter-spacing:0.08em">TODAY</span>'
+            : s.age === 'yesterday'
+            ? '<span style="font-size:9px;font-weight:800;color:#5a2a00;background:#ffe8cc;padding:2px 7px;border-radius:20px;letter-spacing:0.08em">YESTERDAY</span>'
             : '<span style="font-size:9px;font-weight:700;color:#888;background:#f0ede8;padding:2px 7px;border-radius:20px;letter-spacing:0.06em">RECENT</span>';
+          const safeJson = JSON.stringify(s).replace(/"/g,'&quot;');
           return `
           <div class="intel-card" id="icard-${idx}">
             <div class="intel-card-header">
@@ -2266,18 +2355,18 @@ Return 6-9 signals, prioritised by recency. Only return the JSON array, nothing 
               <div class="intel-card-sector">${(s.sector||'').substring(0,22)}</div>
             </div>
             <div class="intel-card-intent">${s.intent||''}</div>
-            ${s.match ? `<div style="font-size:11px;color:#1a6e4a;font-weight:600;display:flex;align-items:center;gap:4px">🔗 <span>Matches: ${s.match}</span></div>` : ''}
+            ${s.headline_ref ? `<div style="font-size:10px;color:#bbb;font-style:italic;border-left:2px solid #e8e4dc;padding-left:8px;margin-top:2px">${s.headline_ref.substring(0,80)}</div>` : ''}
+            ${s.match ? `<div style="font-size:11px;color:#1a6e4a;font-weight:600;margin-top:2px">🔗 Matches: ${s.match}</div>` : ''}
             <div class="intel-card-footer">
               <div class="intel-card-source">${s.source||'News'} · ${s.range||'size TBD'}</div>
-              <button class="intel-add-btn" id="iadd-${idx}" onclick="addNewsSignal(${idx}, ${JSON.stringify(s).replace(/"/g,'&quot;')})">+ Add signal</button>
+              <button class="intel-add-btn" id="iadd-${idx}" onclick="addNewsSignal(${idx}, ${safeJson})">+ Add signal</button>
             </div>
           </div>`;
         }).join('')}
-      </div>
-    `;
+      </div>`;
 
   } catch(e) {
-    inner.innerHTML = '<div style="padding:20px;color:#e53935;font-size:13px">Scan failed — check connection and try again.</div>';
+    inner.innerHTML = `<div style="padding:20px;color:#e53935;font-size:13px">Scan failed: ${e.message}</div>`;
     console.error('Scan error:', e);
   }
 
@@ -2308,6 +2397,247 @@ function addNewsSignal(idx, s) {
   const card = document.getElementById('icard-' + idx);
   if (btn) { btn.textContent = '✓ Added'; btn.classList.add('added'); btn.disabled = true; }
   if (card) { card.style.borderColor = 'rgba(26,110,74,0.4)'; card.style.background = '#f7fdf9'; }
+}
+
+
+// ── DAILY BRIEF GENERATOR ──
+async function generateBrief() {
+  const btn = document.getElementById('brief-btn');
+  const content = document.getElementById('brief-content');
+  const today = new Date();
+
+  btn.textContent = '⚡ Generating...';
+  btn.style.opacity = '0.6';
+  btn.disabled = true;
+
+  document.getElementById('brief-title').textContent = 'Daily M&A Brief';
+  document.getElementById('brief-date').textContent = today.toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+
+  content.innerHTML = '<div style="padding:40px;display:flex;align-items:center;gap:12px;color:#1a6e4a;font-size:14px;font-weight:500"><div class="spin"></div>Pulling headlines from 17 news sources...</div>';
+
+  try {
+    // Step 1: Fetch RSS
+    const rssResp = await fetch('/api/rss');
+    const rssData = await rssResp.json();
+    const articles = rssData.articles || [];
+
+    content.innerHTML = '<div style="padding:40px;display:flex;align-items:center;gap:12px;color:#1a6e4a;font-size:14px;font-weight:500"><div class="spin"></div>Analysing ' + articles.length + ' headlines...</div>';
+
+    const existingLeads = LEADS.map(l => l.co).join(', ');
+    const existingSignals = INTENT.slice(0,20).map(i=>i.co).join(', ');
+    const headlineText = articles.map((a,i) =>
+      `[${i+1}] ${a.source} | ${new Date(a.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})} | ${a.title}${a.description?' — '+a.description.substring(0,150):''}`
+    ).join('
+');
+
+    const prompt = `You are producing the daily M&A intelligence brief for Accomplir Advisors, a Mumbai boutique M&A bank. Today is ${today.toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}.
+
+OUR ACTIVE LEADS: ${existingLeads.substring(0,500)}
+OUR EXISTING INTENT SIGNALS: ${existingSignals.substring(0,300)}
+
+Here are ${articles.length} fresh headlines from ET, Mint, Business Standard, VCCircle, Inc42:
+
+${headlineText}
+
+Produce a structured daily M&A brief in JSON format. Return ONLY valid JSON, no markdown:
+
+{
+  "executive_summary": "3-4 sentence overview of today's M&A landscape in India. What's the dominant theme? What should a boutique IB firm pay attention to?",
+  "deal_count": number of M&A signals found,
+  "sectors_active": ["sector1","sector2","sector3"],
+  "signals": [
+    {
+      "company": "Company name",
+      "sector": "Sector",
+      "type": "Acquirer/Target/Fundraise/PE Deploy/Sector Trend",
+      "headline": "One line — what happened",
+      "detail": "2-3 sentences — what this means, deal size, geography, strategic rationale",
+      "source": "ET/Mint/BS/VCCircle",
+      "range": "Deal size or fund size",
+      "age": "today/yesterday/recent",
+      "match": "Which of our leads or signals does this match? Be specific or leave empty",
+      "action": "Suggested next action for Accomplir — one line"
+    }
+  ],
+  "sector_trends": [
+    {
+      "sector": "Sector name",
+      "trend": "2 sentence description of what's happening in this sector and why it matters for deal sourcing"
+    }
+  ],
+  "ones_to_watch": "2-3 companies or situations to monitor closely in the next week, explained in 2 sentences"
+}`;
+
+    const r = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 3000,
+        system: 'You are a senior M&A analyst producing a daily intelligence brief. Return only valid JSON.',
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const d = await r.json();
+    let text = '';
+    if (d.content) d.content.forEach(b => { if (b.type==='text') text += b.text; });
+
+    let brief;
+    try {
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) brief = JSON.parse(match[0]);
+    } catch(e) { console.warn('Parse error:', e); }
+
+    if (!brief) {
+      content.innerHTML = '<div style="padding:40px;color:#e53935">Could not generate brief. Try again.</div>';
+      return;
+    }
+
+    // Render the brief
+    const typeColors = {
+      'Acquirer': {bg:'#e8f5ee',color:'#1a6e4a'},
+      'Target': {bg:'#f0e8ff',color:'#5a1a9e'},
+      'Fundraise': {bg:'#e8eeff',color:'#1a3a9e'},
+      'PE Deploy': {bg:'#fff8e8',color:'#8a5a00'},
+      'Sector Trend': {bg:'#f0f0f0',color:'#555'}
+    };
+
+    const todaySignals = (brief.signals||[]).filter(s=>s.age==='today');
+    const yestSignals = (brief.signals||[]).filter(s=>s.age==='yesterday');
+    const recentSignals = (brief.signals||[]).filter(s=>s.age==='recent');
+    const matchedSignals = (brief.signals||[]).filter(s=>s.match);
+
+    content.innerHTML = `
+      <!-- Executive Summary -->
+      <div class="brief-summary">
+        <strong style="color:#1a6e4a;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;font-weight:800">Executive Summary</strong>
+        <div style="margin-top:8px">${brief.executive_summary||''}</div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="brief-stat-row">
+        <div class="brief-stat-box">
+          <div class="brief-stat-box-num">${brief.deal_count||brief.signals?.length||0}</div>
+          <div class="brief-stat-box-label">Signals today</div>
+        </div>
+        <div class="brief-stat-box">
+          <div class="brief-stat-box-num">${todaySignals.length}</div>
+          <div class="brief-stat-box-label">Breaking today</div>
+        </div>
+        <div class="brief-stat-box">
+          <div class="brief-stat-box-num" style="color:#1a6e4a">${matchedSignals.length}</div>
+          <div class="brief-stat-box-label">Match our leads</div>
+        </div>
+        <div class="brief-stat-box">
+          <div class="brief-stat-box-num">${brief.sectors_active?.length||0}</div>
+          <div class="brief-stat-box-label">Active sectors</div>
+        </div>
+      </div>
+
+      <!-- Matched signals first -->
+      ${matchedSignals.length ? `
+      <div class="brief-section">
+        <div class="brief-section-title" style="color:#e85a00;border-color:#ffe8cc">🎯 Matches our pipeline (${matchedSignals.length})</div>
+        ${matchedSignals.map((s,i) => {
+          const tc = typeColors[s.type]||typeColors['Sector Trend'];
+          return `<div class="brief-item">
+            <span class="brief-item-badge" style="background:${tc.bg};color:${tc.color}">${s.type}</span>
+            <div class="brief-item-body">
+              <div class="brief-item-co">${s.company}</div>
+              <div class="brief-item-desc">${s.detail||s.headline}</div>
+              <div class="brief-item-match">🔗 ${s.match}</div>
+              ${s.action?`<div style="font-size:11px;color:#0a2a18;font-weight:600;margin-top:4px">→ ${s.action}</div>`:''}
+              <div class="brief-item-meta">${s.source} · ${s.range||'size TBD'} · ${s.age}</div>
+            </div>
+            <button class="brief-add" id="badd-match-${i}" onclick="addBriefSignal('match-${i}', ${JSON.stringify(s).replace(/"/g,'&quot;')})">+ Add</button>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+
+      <!-- Today's signals -->
+      ${todaySignals.length ? `
+      <div class="brief-section">
+        <div class="brief-section-title">Breaking today (${todaySignals.length})</div>
+        ${todaySignals.map((s,i) => {
+          const tc = typeColors[s.type]||typeColors['Sector Trend'];
+          return `<div class="brief-item">
+            <span class="brief-item-badge" style="background:${tc.bg};color:${tc.color}">${s.type}</span>
+            <div class="brief-item-body">
+              <div class="brief-item-co">${s.company}</div>
+              <div class="brief-item-desc">${s.detail||s.headline}</div>
+              ${s.action?`<div style="font-size:11px;color:#0a2a18;font-weight:600;margin-top:4px">→ ${s.action}</div>`:''}
+              <div class="brief-item-meta">${s.source} · ${s.range||'size TBD'}</div>
+            </div>
+            <button class="brief-add" id="badd-today-${i}" onclick="addBriefSignal('today-${i}', ${JSON.stringify(s).replace(/"/g,'&quot;')})">+ Add</button>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+
+      <!-- Yesterday + recent -->
+      ${[...yestSignals,...recentSignals].length ? `
+      <div class="brief-section">
+        <div class="brief-section-title">Recent signals</div>
+        ${[...yestSignals,...recentSignals].map((s,i) => {
+          const tc = typeColors[s.type]||typeColors['Sector Trend'];
+          return `<div class="brief-item">
+            <span class="brief-item-badge" style="background:${tc.bg};color:${tc.color}">${s.type}</span>
+            <div class="brief-item-body">
+              <div class="brief-item-co">${s.company}</div>
+              <div class="brief-item-desc">${s.detail||s.headline}</div>
+              ${s.match?`<div class="brief-item-match">🔗 ${s.match}</div>`:''}
+              <div class="brief-item-meta">${s.source} · ${s.range||'size TBD'} · ${s.age}</div>
+            </div>
+            <button class="brief-add" id="badd-rec-${i}" onclick="addBriefSignal('rec-${i}', ${JSON.stringify(s).replace(/"/g,'&quot;')})">+ Add</button>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+
+      <!-- Sector trends -->
+      ${brief.sector_trends?.length ? `
+      <div class="brief-section">
+        <div class="brief-section-title">Sector trends</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          ${brief.sector_trends.map(t=>`
+            <div style="background:#fafaf8;border:1.5px solid #f0ede8;border-radius:12px;padding:16px">
+              <div style="font-size:12px;font-weight:700;color:#0a2a18;margin-bottom:6px">${t.sector}</div>
+              <div style="font-size:13px;color:#555;line-height:1.5">${t.trend}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>` : ''}
+
+      <!-- Ones to watch -->
+      ${brief.ones_to_watch ? `
+      <div style="background:linear-gradient(135deg,#0a2a18,#1a3a28);border-radius:14px;padding:20px 24px;margin-top:8px">
+        <div style="font-size:10px;font-weight:800;color:rgba(74,222,128,0.7);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:10px">👁 Ones to watch this week</div>
+        <div style="font-size:14px;color:rgba(255,255,255,0.85);line-height:1.7">${brief.ones_to_watch}</div>
+      </div>` : ''}
+
+      <div style="margin-top:32px;padding-top:20px;border-top:1px solid #f0ede8;font-size:11px;color:#bbb;text-align:center">
+        Accomplir Advisors · Daily M&A Brief · Generated ${today.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} · ${articles.length} headlines analysed
+      </div>
+    `;
+
+  } catch(e) {
+    content.innerHTML = `<div style="padding:40px;color:#e53935">Error: ${e.message}</div>`;
+    console.error(e);
+  }
+
+  btn.textContent = '⚡ Regenerate';
+  btn.style.opacity = '1';
+  btn.disabled = false;
+}
+
+function addBriefSignal(id, s) {
+  const today = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
+  const signal = { date: today, co: s.company||'', sector: s.sector||'', range: s.range||'', source: s.source||'Brief', contact: '', intent: s.detail||s.headline||'' };
+  INTENT.unshift(signal);
+  renderIntent(INTENT);
+  renderIntentPreview();
+  document.getElementById('nc-intent').textContent = INTENT.length;
+  writeIntentToOneDrive({ company: signal.co, date: signal.date, sector: signal.sector, range: signal.range, source: signal.source, contact: '', intent: signal.intent });
+  const btn = document.getElementById('badd-' + id);
+  if (btn) { btn.textContent = '✓ Added'; btn.classList.add('added'); btn.disabled = true; }
 }
 
 // ── INIT ──
