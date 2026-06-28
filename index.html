@@ -571,30 +571,80 @@ td.note { color: var(--ink-3); font-size: 13px; max-width: 200px; line-height: 1
     <main class="content">
 
       <!-- OVERVIEW -->
-      <div id="view-overview" class="view active">
-        <div class="page-hdr">
-          <div class="page-title" id="greeting-name">Good morning, Accomplir</div>
-          <div class="page-sub" id="today-str">—</div>
-        </div>
-        <div class="stats">
-          <div class="stat"><div class="stat-label">Open leads</div><div class="stat-val" id="s-leads">—</div><div class="stat-sub">active mandates</div></div>
-          <div class="stat"><div class="stat-label">Intent signals</div><div class="stat-val" id="s-intent">—</div><div class="stat-sub">buyers & investors</div></div>
-          <div class="stat"><div class="stat-label">Total tasks</div><div class="stat-val" id="s-tasks">—</div><div class="stat-sub">Google Sheets live</div></div>
-          <div class="stat"><div class="stat-label">Overdue</div><div class="stat-val red" id="s-ov">—</div><div class="stat-sub">need attention</div></div>
-          <div class="stat"><div class="stat-label">In progress</div><div class="stat-val amber" id="s-ip">—</div><div class="stat-sub">active now</div></div>
-        </div>
-        <div class="two-col">
+      <div id="view-overview" class="view active" style="padding:0;background:white;min-height:100%">
+
+        <!-- HERO -->
+        <div class="ov-hero">
           <div>
-            <div class="section-title">Overdue & due soon</div>
-            <div class="card-box" id="urgent-box"><div class="data-loading"><div class="spin"></div>Loading tasks...</div></div>
+            <div class="ov-greeting" id="greeting-name">Good morning, Accomplir</div>
+            <div class="ov-date" id="today-str">—</div>
           </div>
-          <div>
-            <div class="section-title">Latest intent signals</div>
-            <div class="card-box" id="intent-preview"></div>
+          <div class="ov-hero-actions">
+            <button class="ov-add-btn secondary" onclick="openModal('intent')">+ Signal</button>
+            <button class="ov-add-btn secondary" onclick="openModal('lead')">+ Lead</button>
+            <button class="ov-add-btn primary" onclick="openModal('task')">+ Task</button>
           </div>
         </div>
-        <div class="section-title">Priority leads — action needed</div>
-        <div class="card-box" id="lead-preview"></div>
+
+        <!-- DARK STAT STRIP -->
+        <div class="ov-stats">
+          <div class="ov-stat">
+            <span class="ov-stat-num" id="s-leads">—</span>
+            <span class="ov-stat-label">Open leads</span>
+          </div>
+          <div class="ov-stat-div"></div>
+          <div class="ov-stat">
+            <span class="ov-stat-num" id="s-intent">—</span>
+            <span class="ov-stat-label">Intent signals</span>
+          </div>
+          <div class="ov-stat-div"></div>
+          <div class="ov-stat">
+            <span class="ov-stat-num" id="s-tasks">—</span>
+            <span class="ov-stat-label">Total tasks</span>
+          </div>
+          <div class="ov-stat-div"></div>
+          <div class="ov-stat">
+            <span class="ov-stat-num red" id="s-ov">—</span>
+            <span class="ov-stat-label">Overdue</span>
+          </div>
+          <div class="ov-stat-div"></div>
+          <div class="ov-stat">
+            <span class="ov-stat-num amber" id="s-ip">—</span>
+            <span class="ov-stat-label">In progress</span>
+          </div>
+        </div>
+
+        <!-- 3-COL GRID -->
+        <div class="ov-grid">
+
+          <!-- TASKS -->
+          <div class="ov-col">
+            <div class="ov-section-hdr">
+              <span class="ov-section-title">Tasks — overdue & soon</span>
+              <button class="ov-see-all" onclick="show('tasks', document.querySelector('[onclick*=tasks]'))">See all →</button>
+            </div>
+            <div class="ov-card" id="urgent-box"><div class="data-loading"><div class="spin"></div>Loading...</div></div>
+          </div>
+
+          <!-- INTENT -->
+          <div class="ov-col">
+            <div class="ov-section-hdr">
+              <span class="ov-section-title">Latest intent signals</span>
+              <button class="ov-see-all" onclick="show('intent', document.querySelector('[onclick*=intent]'))">See all →</button>
+            </div>
+            <div class="ov-card" id="intent-preview"></div>
+          </div>
+
+          <!-- LEADS -->
+          <div class="ov-col">
+            <div class="ov-section-hdr">
+              <span class="ov-section-title">Priority leads</span>
+              <button class="ov-see-all" onclick="show('leads', document.querySelector('[onclick*=leads]'))">See all →</button>
+            </div>
+            <div class="ov-card" id="lead-preview"></div>
+          </div>
+
+        </div>
       </div>
 
       <!-- TASKS -->
