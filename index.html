@@ -575,7 +575,7 @@ td.note { color: var(--ink-3); font-size: 13px; max-width: 200px; line-height: 1
               <div class="chip" onclick="askAcco('What tasks are overdue right now?')">Overdue tasks</div>
               <div class="chip" onclick="askAcco('Which leads have no EL yet?')">Leads without EL</div>
               <div class="chip" onclick="askAcco('Match latest intent signals to our current leads')">Intent × lead matches</div>
-              <div class="chip" onclick="askAcco('What is Raghav working on this week?')">Raghav this week</div>
+              <div class="chip" onclick="askAcco('What is Zeenath working on this week?')">Zeenath this week</div>
               <div class="chip" onclick="askAcco('Which hospital leads match what Aster DM is looking for?')">Hospital matches</div>
             </div>
             <div class="acco-inp-row">
@@ -1007,7 +1007,7 @@ function renderIntentPreview() {
   el.innerHTML = recent.map(i => `
     <div class="intent-row">
       <div class="intent-name">${i.co}</div>
-      <div class="intent-sub">${i.sector}${i.date?' · '+i.date:''}</div>
+      <div class="intent-sub">${i.sector}${i.date?' · '+((/^\d{5}$/.test(String(i.date).trim()))?new Date(Date.UTC(1899,11,30)+parseInt(i.date)*86400000).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):i.date):''}</div>
       <div class="tags">
         ${i.range?`<span class="tag">${i.range}</span>`:''}
         ${i.source?`<span class="tag">${i.source.substring(0,25)}</span>`:''}
@@ -1018,8 +1018,10 @@ function renderIntentPreview() {
 // ── LEAD PREVIEW ──
 function renderLeadPreview() {
   const el = document.getElementById('lead-preview');
-  // Most recently added open leads first (highest row number)
-  const open = [...LEADS].filter(l => l.status === 'Open').reverse().slice(0, 6);
+  // Priority: Open leads sorted by most recently added (highest n)
+  const open = [...LEADS].filter(l => l.status === 'Open')
+    .sort((a,b) => (parseInt(b.n)||0) - (parseInt(a.n)||0))
+    .slice(0, 8);
   el.innerHTML = open.map(l => {
     const av = avClass(l.lead);
     const typeClass = l.type === 'Buy' ? 'b-buy' : 'b-sell';
@@ -1237,100 +1239,182 @@ async function send() {
   msgs.appendChild(td);
   msgs.scrollTop = msgs.scrollHeight;
 
-  const lower = txt.toLowerCase();
-  const isTaskLog = /add.{0,10}task|create.{0,10}task|log.{0,10}task|new task|add a task/i.test(lower);
-  const isLeadLog = /add.{0,10}lead|new lead|log.{0,10}lead|new mandate/i.test(lower);
-
-  if (isTaskLog) {
-    const ownerMatch = txt.match(/(Zeenath|Ashish|Raghav|Yohaanne|Libin|Nandita)/i);
-    const dueMatch = txt.match(/(\d{1,2})(?:st|nd|rd|th)?\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*(?:\s+(\d{4}))?/i)
-                  || txt.match(/(\d{4}-\d{2}-\d{2})/);
-    const projectMatch = txt.match(/(housekeeping|deal sourcing|kavach|bls|baywood|ravi neuro|marathamandal|antlia|insolation|rmc|nila|db power)/i);
-
-    const owner = ownerMatch ? ownerMatch[1] : 'Zeenath';
-    const project = projectMatch ? projectMatch[1] : 'Deal Sourcing';
-
-    let taskDesc = txt
-      .replace(/add\s+a?\s*task\s*[:\-]?\s*/i, '')
-      .replace(/for\s+(Zeenath|Ashish|Raghav|Yohaanne|Libin|Nandita)/gi, '')
-      .replace(/\b(Zeenath|Ashish|Raghav|Yohaanne|Libin|Nandita)\b/gi, '')
-      .replace(/\s*(due|by|on)\s+\d{1,2}\w*\s+\w+(\s+\d{4})?/gi, '')
-      .replace(/29th June|30th June|29 June|30 June/gi, '')
-      .replace(/\s+/g, ' ').trim();
-
-    let dueDate = '';
-    if (dueMatch) {
-      const months = {jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
-      if (dueMatch[0].match(/\d{4}-\d{2}-\d{2}/)) {
-        dueDate = dueMatch[0];
-      } else {
-        const day = dueMatch[1].padStart(2,'0');
-        const mon = months[dueMatch[2].toLowerCase().substring(0,3)] || '06';
-        const yr = dueMatch[3] || '2026';
-        dueDate = yr + '-' + mon + '-' + day;
-      }
-    }
-
-    TASKS.push({ Name: owner, Project: project, Task: taskDesc, 'Due Date': dueDate, Status: 'Not Started', Notes: '' });
-    renderTasks(TASKS);
-    updateStats();
-    renderUrgent();
-    document.getElementById('nc-tasks').textContent = TASKS.length;
-
-    fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify({ Name: owner, Project: project, Task: taskDesc, 'Start Date': '', 'Due Date': dueDate, Status: 'Not Started', Notes: '', Substage: '', Priority: '', Effort: '', Blocking: '', Tags: '' })
-    }).then(() => console.log('Task written to sheet')).catch(e => console.warn('Sheet write error:', e));
-
-    td.innerHTML = '<div class="m-av">A</div><div class="bubble">Task added to Google Sheets ✅<br><br><strong>' + owner + '</strong> &middot; ' + project + '<br>' + taskDesc + '<br>Due: ' + (dueDate||'no date') + ' &middot; Not Started</div>';
-    msgs.scrollTop = msgs.scrollHeight;
-    msgHistory.push({ role:'user', content: txt });
-    msgHistory.push({ role:'assistant', content: 'Task logged: ' + owner + ' | ' + project + ' | ' + taskDesc });
-    return;
-  }
-
-  if (isLeadLog) {
-    const coMatch = txt.match(/(?:lead|company)[:\s]+([A-Za-z\s]+?)(?:,|\.|buy|sell|$)/i);
-    const company = coMatch ? coMatch[1].trim() : 'New Company';
-    const typeMatch = txt.match(/(buy|sell)/i);
-    const sizeMatch = txt.match(/(\d+[\s]*cr)/i);
-    const leadPerson = txt.match(/(Zeenath|Ashish|Raghav|Yohaanne|Libin|Nandita)/i);
-
-    LEADS.push({ n: LEADS.length+1, co: company, type: typeMatch ? (typeMatch[1][0].toUpperCase()+'uy').replace('Buy','Buy').replace('Suy','Sell') : 'Sell', status: 'Open', size: sizeMatch ? sizeMatch[1] : '', lead: leadPerson ? leadPerson[1] : 'Zeenath', contact: '', next: 'Initial outreach' });
-    renderLeads(LEADS);
-    document.getElementById('nc-leads').textContent = LEADS.length;
-
-    td.innerHTML = '<div class="m-av">A</div><div class="bubble">Lead added to dashboard ✅<br><br><strong>' + company + '</strong><br>Added to Leads view. Note: write to OneDrive manually for now.</div>';
-    msgs.scrollTop = msgs.scrollHeight;
-    msgHistory.push({ role:'user', content: txt });
-    msgHistory.push({ role:'assistant', content: 'Lead logged: ' + company });
-    return;
-  }
-
   msgHistory.push({ role: 'user', content: txt });
 
   const leadCtx = LEADS.map(function(l) { return '#'+l.n+' '+l.co+'|'+l.type+'-side|'+l.status+'|'+l.size+'|'+l.lead+'|next:'+l.next; }).join('\n');
   const intentCtx = INTENT.slice(0,50).map(function(i) { return i.date+'|'+i.co+'|'+i.sector+'|'+i.range+'|'+i.source+'|'+i.contact+'|'+i.intent.substring(0,120); }).join('\n');
-  const taskCtx = TASKS.map(function(t) { return t.Name+'|'+t.Project+'|'+t.Task+'|due:'+(t['Due Date']||'none')+'|'+(t.Status||'—')+'|'+(t.Notes||''); }).join('\n');
+  const taskCtx = TASKS.map(function(t) { return t.Name+'|'+t.Project+'|'+t.Task+'|due:'+(t['Due Date']||'none')+'|'+(t.Status||'no status'); }).join('\n');
 
-  const sys = 'You are Acco, the M&A deal assistant for Accomplir Advisors — a Mumbai-based boutique investment bank. Today is 27 June 2026.\n\nLEADS (' + LEADS.length + ' total, live from OneDrive):\n' + leadCtx + '\n\nINTENT SIGNALS (' + INTENT.length + ' total):\n' + intentCtx + '\n\nTASKS (' + TASKS.length + ' total, live from Google Sheets):\n' + taskCtx + '\n\nTEAM: Zeenath (Partner), Ashish (Founding Partner), Raghav (Associate M&A), Yohaanne, Libin, Nandita.\n\nKEY MATCHES: Saatvik Green\u2194India Circuits (PCB/smart metering), Rainmatter\u2194Antlia Fintech, Aster DM\u2194hospital leads (150+ beds), BLS\u2194Antlia Fintech.\n\nRULES:\n- Be direct, specific, sharp. Name companies, people, amounts.\n- Under 8 lines unless detail is truly needed.\n- For MATCHING: sector + size + geography overlap.\n- Always suggest a next action.';
+  const sys = 'You are Acco, the M&A deal assistant for Accomplir Advisors. Today is 27 June 2026.\n\n'
+    + 'LEADS (' + LEADS.length + '):\n' + leadCtx + '\n\n'
+    + 'INTENT (' + INTENT.length + '):\n' + intentCtx + '\n\n'
+    + 'TASKS (' + TASKS.length + '):\n' + taskCtx + '\n\n'
+    + 'TEAM: Zeenath (Partner), Ashish (Founding Partner), Yohaanne, Libin, Nandita, Disha.\n\n'
+    + 'KEY MATCHES: Saatvik Green\u2194India Circuits, Rainmatter\u2194Antlia Fintech, Aster DM\u2194hospital leads.\n\n'
+    + 'CRITICAL LOGGING RULES:\n'
+    + 'When the user wants to add/log/create anything, respond with ONLY a JSON block followed by a brief confirmation.\n'
+    + 'You can handle MULTIPLE actions in one message - output multiple JSON blocks.\n\n'
+    + 'For tasks: ACTION_TASK: {"owner":"Zeenath","project":"Housekeeping","task":"Task name","due":"2026-06-29","status":"Not Started","notes":""}\n'
+    + 'For leads: ACTION_LEAD: {"company":"Name","type":"Sell","status":"Open","size":"50cr","lead":"Zeenath","contact":"","next":"Next step"}\n'
+    + 'For intent: ACTION_INTENT: {"date":"27-Jun-26","company":"Name","sector":"Sector","range":"100cr","source":"Source","contact":"Name","intent":"What they want"}\n\n'
+    + 'Rules:\n'
+    + '- Output JSON blocks first, then a 2-3 line human confirmation\n'
+    + '- For composite requests ("add X and also Y"), output ALL relevant JSON blocks\n'
+    + '- Infer missing fields: no project = use "Deal Sourcing" for deals, "Housekeeping" for admin\n'
+    + '- For "log I spoke to X at Y" = create a follow-up task\n'
+    + '- For questions/analysis: just answer directly, no JSON needed\n'
+    + '- NEVER say you cannot write to external systems';
 
   try {
     const r = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 600, system: sys, messages: msgHistory })
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 800, system: sys, messages: msgHistory })
     });
     const d = await r.json();
     const reply = d.content && d.content[0] ? d.content[0].text : "Couldn't respond — try again.";
-    td.innerHTML = '<div class="m-av">A</div><div class="bubble">' + reply.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>') + '</div>';
+
+    // Parse all action blocks
+    const taskMatches = [...reply.matchAll(/ACTION_TASK:\s*(\{[^}]+\})/g)];
+    const leadMatches = [...reply.matchAll(/ACTION_LEAD:\s*(\{[^}]+\})/g)];
+    const intentMatches = [...reply.matchAll(/ACTION_INTENT:\s*(\{[^}]+\})/g)];
+
+    taskMatches.forEach(function(m) {
+      try {
+        const t = JSON.parse(m[1]);
+        TASKS.push({ Name: t.owner||'', Project: t.project||'Deal Sourcing', Task: t.task||'', 'Due Date': t.due||'', Status: t.status||'Not Started', Notes: t.notes||'' });
+        renderTasks(TASKS);
+        updateStats();
+        renderUrgent();
+        document.getElementById('nc-tasks').textContent = TASKS.length;
+        fetch(APPS_SCRIPT_URL, {
+          method: 'POST', mode: 'no-cors',
+          body: JSON.stringify({ Name: t.owner||'', Project: t.project||'', Task: t.task||'', 'Start Date': '', 'Due Date': t.due||'', Status: t.status||'Not Started', Notes: t.notes||'', Substage: '', Priority: '', Effort: '', Blocking: '', Tags: '' })
+        }).catch(function(e) { console.warn('Task write error:', e); });
+      } catch(e) { console.warn('Task parse error:', e, m[1]); }
+    });
+
+    leadMatches.forEach(function(m) {
+      try {
+        const l = JSON.parse(m[1]);
+        LEADS.push({ n: LEADS.length+1, co: l.company||'', type: l.type||'Sell', status: l.status||'Open', size: l.size||'', lead: l.lead||'', contact: l.contact||'', next: l.next||'', date: '27-Jun-26' });
+        renderLeads(LEADS);
+        renderLeadPreview();
+        document.getElementById('nc-leads').textContent = LEADS.length;
+        // Write to OneDrive
+        writeLeadToOneDrive(l);
+      } catch(e) { console.warn('Lead parse error:', e, m[1]); }
+    });
+
+    intentMatches.forEach(function(m) {
+      try {
+        const i = JSON.parse(m[1]);
+        INTENT.unshift({ date: i.date||'27-Jun-26', co: i.company||'', sector: i.sector||'', range: i.range||'', source: i.source||'', contact: i.contact||'', intent: i.intent||'' });
+        renderIntent(INTENT);
+        renderIntentPreview();
+        document.getElementById('nc-intent').textContent = INTENT.length;
+        // Write intent to OneDrive via Graph API
+        writeIntentToOneDrive(i);
+      } catch(e) { console.warn('Intent parse error:', e, m[1]); }
+    });
+
+    // Clean JSON blocks from display
+    const cleanReply = reply
+      .replace(/ACTION_TASK:\s*\{[^}]+\}/g, '')
+      .replace(/ACTION_LEAD:\s*\{[^}]+\}/g, '')
+      .replace(/ACTION_INTENT:\s*\{[^}]+\}/g, '')
+      .replace(/\n{3,}/g, '\n\n').trim();
+
+    td.innerHTML = '<div class="m-av">A</div><div class="bubble">' + cleanReply.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>') + '</div>';
     msgHistory.push({ role: 'assistant', content: reply });
     if (msgHistory.length > 20) msgHistory = msgHistory.slice(-20);
   } catch(e) {
     td.innerHTML = '<div class="m-av">A</div><div class="bubble">Connection issue — check your internet and try again.</div>';
   }
   msgs.scrollTop = msgs.scrollHeight;
+}
+
+// Write lead to OneDrive Excel via Graph API
+async function writeLeadToOneDrive(l) {
+  try {
+    TOKEN = await getToken();
+    if (!TOKEN) { console.warn('No token for lead write'); return; }
+    const worksheets = await fetch('https://graph.microsoft.com/v1.0/drives/' + ZEENATH_DRIVE_ID + '/items/' + LEAD_ITEM_ID + '/workbook/worksheets', { headers: { Authorization: 'Bearer ' + TOKEN } }).then(r => r.json());
+    const sheetName = worksheets.value[0].name;
+    // Get used range to find next empty row
+    const range = await fetch('https://graph.microsoft.com/v1.0/drives/' + ZEENATH_DRIVE_ID + '/items/' + LEAD_ITEM_ID + '/workbook/worksheets('' + encodeURIComponent(sheetName) + '')/usedRange', { headers: { Authorization: 'Bearer ' + TOKEN } }).then(r => r.json());
+    const rowNum = range.rowCount + 1;
+    // Lead sheet columns: S.no, Company, Brief, Status, Potential ticket size, Mandate type, Date received, Teaser (Y/N), Points of Contact, Phone no, Email ID, Progress/Activities done so far, Action (Next steps), Lead by, Person Responsible, Other Notes
+    const values = [[
+      String(LEADS.length), // S.no
+      l.company||'',        // Company
+      l.brief||'',          // Brief
+      l.status||'Open',     // Status
+      l.size||'',           // Potential ticket size
+      (l.type||'Sell') + '-side', // Mandate type
+      l.date||'',           // Date received
+      'N',                  // Teaser Y/N
+      l.contact||'',        // Points of Contact
+      '', '',               // Phone, Email
+      '',                   // Progress
+      l.next||'',           // Action (Next steps)
+      l.lead||'',           // Lead by
+      l.lead||'',           // Person Responsible
+      ''                    // Other Notes
+    ]];
+    const appendUrl = 'https://graph.microsoft.com/v1.0/drives/' + ZEENATH_DRIVE_ID + '/items/' + LEAD_ITEM_ID + '/workbook/worksheets('' + encodeURIComponent(sheetName) + '')/range(address='A' + rowNum + ':P' + rowNum + '')';
+    await fetch(appendUrl, {
+      method: 'PATCH',
+      headers: { Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: values })
+    });
+    console.log('Lead written to OneDrive at row', rowNum);
+  } catch(e) {
+    console.warn('OneDrive lead write failed:', e);
+  }
+}
+
+// Write intent signal to OneDrive Excel via Graph API
+async function writeIntentToOneDrive(i) {
+  try {
+    TOKEN = await getToken();
+    if (!TOKEN) { console.warn('No token for intent write'); return; }
+    // Get current used range to find next empty row
+    const rangeUrl = 'https://graph.microsoft.com/v1.0/drives/' + ZEENATH_DRIVE_ID + '/items/' + INTENT_ITEM_ID + '/workbook/worksheets(\'Sheet1\')/usedRange';
+    const range = await fetch(rangeUrl, { headers: { Authorization: 'Bearer ' + TOKEN } }).then(r => r.json());
+    const nextRow = range.rowCount + 1;
+    const rowNum = range.address ? parseInt(range.address.match(/\d+$/)) + 1 : nextRow;
+
+    // Append row - columns: S.no, Date discovered, Intent spotted at, Investor, Location, Primary Product, Sector, Sectors Intent on, Products intent on, Deal range, Intent Source, Person, Designation, Email, Phone, Date Contacted, Comments
+    const values = [[
+      '', // S.no (auto or leave blank)
+      i.date||'',
+      i.source||'',
+      i.company||'',
+      '', // Location
+      '', // Primary product
+      i.sector||'',
+      i.intent||'',
+      '', // Products intent on
+      i.range||'',
+      i.source||'',
+      i.contact||'',
+      '', '', '', '', ''
+    ]];
+
+    const worksheets = await fetch('https://graph.microsoft.com/v1.0/drives/' + ZEENATH_DRIVE_ID + '/items/' + INTENT_ITEM_ID + '/workbook/worksheets', { headers: { Authorization: 'Bearer ' + TOKEN } }).then(r => r.json());
+    const sheetName = worksheets.value[0].name;
+    const appendUrl = 'https://graph.microsoft.com/v1.0/drives/' + ZEENATH_DRIVE_ID + '/items/' + INTENT_ITEM_ID + '/workbook/worksheets(\'' + encodeURIComponent(sheetName) + '\')/range(address=\'A' + rowNum + ':Q' + rowNum + '\')';
+
+    await fetch(appendUrl, {
+      method: 'PATCH',
+      headers: { Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: values })
+    });
+    console.log('Intent written to OneDrive at row', rowNum);
+  } catch(e) {
+    console.warn('OneDrive intent write failed:', e);
+  }
 }
 
 
@@ -1386,38 +1470,45 @@ function submitModal() {
   else if (currentModalTab === 'lead') {
     const co = document.getElementById('m-lead-co').value;
     if (!co) { alert('Please enter a company name'); return; }
-    LEADS.push({
+    const leadObj = {
       n: LEADS.length + 1,
       co, type: document.getElementById('m-lead-type').value,
       status: document.getElementById('m-lead-status').value,
       size: document.getElementById('m-lead-size').value,
       lead: document.getElementById('m-lead-owner').value,
       contact: document.getElementById('m-lead-contact').value,
-      next: document.getElementById('m-lead-next').value
-    });
+      next: document.getElementById('m-lead-next').value,
+      date: new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-')
+    };
+    LEADS.push(leadObj);
     renderLeads(LEADS);
     renderLeadPreview();
     document.getElementById('nc-leads').textContent = LEADS.length;
     document.getElementById('m-lead-co').value = '';
     document.getElementById('m-lead-next').value = '';
+    // Write to OneDrive
+    writeLeadToOneDrive({ company: leadObj.co, type: leadObj.type, status: leadObj.status, size: leadObj.size, lead: leadObj.lead, contact: leadObj.contact, next: leadObj.next, date: leadObj.date });
   }
   else if (currentModalTab === 'intent') {
     const co = document.getElementById('m-intent-co').value;
     if (!co) { alert('Please enter a company name'); return; }
     const today6 = new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
-    INTENT.unshift({
+    const intentObj = {
       date: today6, co,
       sector: document.getElementById('m-intent-sector').value,
       range: document.getElementById('m-intent-range').value,
       source: document.getElementById('m-intent-source').value,
       contact: document.getElementById('m-intent-contact').value,
       intent: document.getElementById('m-intent-intent').value
-    });
+    };
+    INTENT.unshift(intentObj);
     renderIntent(INTENT);
     renderIntentPreview();
     document.getElementById('nc-intent').textContent = INTENT.length;
     document.getElementById('m-intent-co').value = '';
     document.getElementById('m-intent-intent').value = '';
+    // Write to OneDrive
+    writeIntentToOneDrive({ company: intentObj.co, date: intentObj.date, sector: intentObj.sector, range: intentObj.range, source: intentObj.source, contact: intentObj.contact, intent: intentObj.intent });
   }
   closeModal();
 }
