@@ -1342,7 +1342,7 @@ async function writeLeadToOneDrive(l) {
     const worksheets = await fetch('https://graph.microsoft.com/v1.0/drives/' + ZEENATH_DRIVE_ID + '/items/' + LEAD_ITEM_ID + '/workbook/worksheets', { headers: { Authorization: 'Bearer ' + TOKEN } }).then(r => r.json());
     const sheetName = worksheets.value[0].name;
     // Get used range to find next empty row
-    const range = await fetch('https://graph.microsoft.com/v1.0/drives/' + ZEENATH_DRIVE_ID + '/items/' + LEAD_ITEM_ID + '/workbook/worksheets('' + encodeURIComponent(sheetName) + '')/usedRange', { headers: { Authorization: 'Bearer ' + TOKEN } }).then(r => r.json());
+    const range = await fetch(`https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${LEAD_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`, { headers: { Authorization: 'Bearer ' + TOKEN } }).then(r => r.json());
     const rowNum = range.rowCount + 1;
     // Lead sheet columns: S.no, Company, Brief, Status, Potential ticket size, Mandate type, Date received, Teaser (Y/N), Points of Contact, Phone no, Email ID, Progress/Activities done so far, Action (Next steps), Lead by, Person Responsible, Other Notes
     const values = [[
@@ -1362,7 +1362,7 @@ async function writeLeadToOneDrive(l) {
       l.lead||'',           // Person Responsible
       ''                    // Other Notes
     ]];
-    const appendUrl = 'https://graph.microsoft.com/v1.0/drives/' + ZEENATH_DRIVE_ID + '/items/' + LEAD_ITEM_ID + '/workbook/worksheets('' + encodeURIComponent(sheetName) + '')/range(address='A' + rowNum + ':P' + rowNum + '')';
+    const appendUrl = `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${LEAD_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/range(address='A${rowNum}:P${rowNum}')`;
     await fetch(appendUrl, {
       method: 'PATCH',
       headers: { Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
@@ -1404,7 +1404,7 @@ async function writeIntentToOneDrive(i) {
 
     const worksheets = await fetch('https://graph.microsoft.com/v1.0/drives/' + ZEENATH_DRIVE_ID + '/items/' + INTENT_ITEM_ID + '/workbook/worksheets', { headers: { Authorization: 'Bearer ' + TOKEN } }).then(r => r.json());
     const sheetName = worksheets.value[0].name;
-    const appendUrl = 'https://graph.microsoft.com/v1.0/drives/' + ZEENATH_DRIVE_ID + '/items/' + INTENT_ITEM_ID + '/workbook/worksheets(\'' + encodeURIComponent(sheetName) + '\')/range(address=\'A' + rowNum + ':Q' + rowNum + '\')';
+    const appendUrl = `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/range(address='A${rowNum}:Q${rowNum}')`;
 
     await fetch(appendUrl, {
       method: 'PATCH',
