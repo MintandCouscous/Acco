@@ -2265,8 +2265,7 @@ async function scanNewsForSignals() {
     // Format headlines as compact text
     const headlineText = articles.map((a,i) =>
       `[${i+1}] ${a.source} | ${new Date(a.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})} | ${a.title}${a.description ? ' — ' + a.description.substring(0,120) : ''}`
-    ).join('
-');
+    ).join('\n');
 
     const prompt = `Today is ${today}. You are scanning Indian business news for Accomplir Advisors, a Mumbai boutique M&A bank.
 
@@ -2427,8 +2426,7 @@ async function generateBrief() {
     const existingSignals = INTENT.slice(0,20).map(i=>i.co).join(', ');
     const headlineText = articles.map((a,i) =>
       `[${i+1}] ${a.source} | ${new Date(a.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})} | ${a.title}${a.description?' — '+a.description.substring(0,150):''}`
-    ).join('
-');
+    ).join('\n');
 
     const prompt = `You are producing the daily M&A intelligence brief for Accomplir Advisors, a Mumbai boutique M&A bank. Today is ${today.toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}.
 
