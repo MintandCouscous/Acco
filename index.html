@@ -399,12 +399,15 @@ td.note { color: var(--ink-3); font-size: 13px; max-width: 200px; line-height: 1
 }
 .ov-stat {
   flex: 1; text-align: center; padding: 28px 16px;
-  position: relative; transition: background 0.2s; cursor: default;
+  position: relative; transition: all 0.2s; cursor: pointer;
 }
-.ov-stat:hover { background: rgba(255,255,255,0.05); }
+.ov-stat:hover { background: rgba(255,255,255,0.08); }
+.ov-stat:hover .ov-stat-num { transform: scale(1.05); display: block; }
+.ov-stat:active { background: rgba(255,255,255,0.12); }
 .ov-stat-num {
   font-family: var(--serif); font-size: 44px; color: white;
   line-height: 1; letter-spacing: -2px; display: block;
+  transition: transform 0.2s;
 }
 .ov-stat-num.red { color: #ff6b6b; }
 .ov-stat-num.amber { color: var(--gold-2); }
@@ -476,6 +479,115 @@ td.note { color: var(--ink-3); font-size: 13px; max-width: 200px; line-height: 1
   .acco-wrap { grid-template-columns: 1fr; }
   .acco-side { display: none; }
 }
+
+/* ── MICRO-INTERACTIONS ── */
+.nav-btn { transition: all 0.15s cubic-bezier(0.4,0,0.2,1); }
+.nav-btn:hover { transform: translateX(2px); }
+.nav-btn.active { transform: none; }
+
+.task-row { transition: all 0.15s ease; cursor: default; }
+.task-row:hover { padding-left: 22px; }
+
+.intent-row { transition: all 0.15s ease; cursor: default; }
+.intent-row:hover { background: #fafaf8; padding-left: 22px; }
+
+.ov-card { transition: all 0.25s cubic-bezier(0.4,0,0.2,1); }
+.ov-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.1); }
+
+/* Stat strip glow on hover */
+.ov-stat::after {
+  content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 0; height: 2px; background: var(--gold-2);
+  transition: width 0.3s ease;
+}
+.ov-stat:hover::after { width: 60%; }
+
+/* Topbar */
+.topbar {
+  background: white !important;
+  border-bottom: 1px solid #f0ede8 !important;
+}
+.t-wordmark { color: #0a0a0a !important; }
+.t-subtitle { color: #999 !important; }
+.live-pill { background: #f5f2eb !important; border-color: #e8e4dc !important; color: #555 !important; }
+.live-dot { background: #22c55e !important; }
+.topbar-btn { background: #f5f2eb !important; border-color: #e8e4dc !important; color: #333 !important; }
+.topbar-btn:hover { background: #0a0a0a !important; color: white !important; }
+.user-av { background: #0a0a0a !important; color: var(--gold-2) !important; }
+.user-name { color: #555 !important; }
+
+/* Sidebar */
+.sidebar { background: white !important; border-right: 1px solid #f0ede8 !important; }
+
+/* Badge pulse for new items */
+@keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+.task-row, .intent-row { animation: fadeIn 0.3s ease; }
+
+/* Intent preview cards */
+#intent-preview .intent-row:first-child { background: linear-gradient(135deg, #fdf8f0 0%, white 100%); }
+
+/* Lead rows in overview */
+#lead-preview .task-row { border-left: none; }
+#lead-preview .task-row:hover { border-left: 3px solid var(--gold); padding-left: 15px; }
+
+/* "See all" arrow animation */
+.ov-see-all { transition: all 0.15s; }
+.ov-see-all:hover { transform: translateX(3px); }
+
+/* Smooth view transitions */
+.view { animation: fadeIn 0.2s ease; }
+
+/* Modal animation */
+.modal-overlay { transition: opacity 0.2s; opacity: 0; pointer-events: none; }
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-overlay .modal { transform: translateY(10px); transition: transform 0.25s cubic-bezier(0.4,0,0.2,1); }
+.modal-overlay.open .modal { transform: translateY(0); }
+
+/* Filter bar inputs */
+.filter-bar select, .filter-bar input {
+  transition: all 0.15s; box-shadow: none !important;
+}
+.filter-bar select:focus, .filter-bar input:focus {
+  border-color: #0a0a0a !important;
+  box-shadow: 0 0 0 3px rgba(10,10,10,0.06) !important;
+}
+
+/* Table row hover */
+tr { transition: background 0.1s; }
+
+/* Acco chat input glow */
+.acco-inp:focus {
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 0 3px rgba(184,146,58,0.12) !important;
+}
+
+/* Send button pulse */
+.send-btn:hover { transform: scale(1.08); }
+.send-btn:active { transform: scale(0.95); }
+
+/* Chip hover */
+.chip { transition: all 0.15s cubic-bezier(0.4,0,0.2,1); }
+.chip:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+/* Stat card hover in other views */
+.stat { transition: all 0.2s; }
+.stat:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+
+/* Person card */
+.person-card { transition: all 0.2s; }
+.person-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.08); border-color: #e0dbd0; }
+
+/* Add btn in topbar */
+.add-btn { transition: all 0.15s cubic-bezier(0.4,0,0.2,1); }
+.add-btn:hover { transform: translateY(-1px); }
+.add-btn:active { transform: scale(0.97); }
+
+/* Scroll bars */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #e0dbd0; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #c8c3b8; }
+
 </style>
 </head>
 <body>
@@ -512,7 +624,7 @@ td.note { color: var(--ink-3); font-size: 13px; max-width: 200px; line-height: 1
       <span class="t-subtitle">Accomplir Deal Intelligence</span>
     </div>
     <div class="topbar-right">
-      <div class="live-pill"><span class="live-dot"></span><span id="live-text">Loading...</span></div>
+      <div class="live-pill" id="live-pill" style="cursor:default"><span class="live-dot"></span><span id="live-text">Connecting...</span></div>
       <button class="topbar-btn" onclick="refreshAll()">
         <svg id="ref-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
         Refresh
@@ -586,31 +698,31 @@ td.note { color: var(--ink-3); font-size: 13px; max-width: 200px; line-height: 1
           </div>
         </div>
 
-        <!-- DARK STAT STRIP -->
+        <!-- DARK STAT STRIP — fully clickable -->
         <div class="ov-stats">
-          <div class="ov-stat">
+          <div class="ov-stat" onclick="show('leads', document.querySelector('[onclick*=leads]')); document.getElementById('l-status').value='Open'; filterLeads();" title="View open leads">
             <span class="ov-stat-num" id="s-leads">—</span>
-            <span class="ov-stat-label">Open leads</span>
+            <span class="ov-stat-label">Open leads ↗</span>
           </div>
           <div class="ov-stat-div"></div>
-          <div class="ov-stat">
+          <div class="ov-stat" onclick="show('intent', document.querySelector('[onclick*=\"intent\"]'))" title="View intent signals">
             <span class="ov-stat-num" id="s-intent">—</span>
-            <span class="ov-stat-label">Intent signals</span>
+            <span class="ov-stat-label">Intent signals ↗</span>
           </div>
           <div class="ov-stat-div"></div>
-          <div class="ov-stat">
+          <div class="ov-stat" onclick="show('tasks', document.querySelector('[onclick*=\"tasks\"]'))" title="View all tasks">
             <span class="ov-stat-num" id="s-tasks">—</span>
-            <span class="ov-stat-label">Total tasks</span>
+            <span class="ov-stat-label">Total tasks ↗</span>
           </div>
           <div class="ov-stat-div"></div>
-          <div class="ov-stat">
+          <div class="ov-stat" onclick="show('tasks', document.querySelector('[onclick*=tasks]')); document.getElementById('t-status').value='not started'; filterTasks();" title="View overdue tasks">
             <span class="ov-stat-num red" id="s-ov">—</span>
-            <span class="ov-stat-label">Overdue</span>
+            <span class="ov-stat-label">Overdue ↗</span>
           </div>
           <div class="ov-stat-div"></div>
-          <div class="ov-stat">
+          <div class="ov-stat" onclick="show('tasks', document.querySelector('[onclick*=tasks]')); document.getElementById('t-status').value='progress'; filterTasks();" title="View in-progress tasks">
             <span class="ov-stat-num amber" id="s-ip">—</span>
-            <span class="ov-stat-label">In progress</span>
+            <span class="ov-stat-label">In progress ↗</span>
           </div>
         </div>
 
@@ -621,7 +733,7 @@ td.note { color: var(--ink-3); font-size: 13px; max-width: 200px; line-height: 1
           <div class="ov-col">
             <div class="ov-section-hdr">
               <span class="ov-section-title">Tasks — overdue & soon</span>
-              <button class="ov-see-all" onclick="show('tasks', document.querySelector('[onclick*=tasks]'))">See all →</button>
+              <button class="ov-see-all" onclick="show('tasks', document.querySelector('[onclick*=\"tasks\"]'))">See all →</button>
             </div>
             <div class="ov-card" id="urgent-box"><div class="data-loading"><div class="spin"></div>Loading...</div></div>
           </div>
@@ -630,7 +742,7 @@ td.note { color: var(--ink-3); font-size: 13px; max-width: 200px; line-height: 1
           <div class="ov-col">
             <div class="ov-section-hdr">
               <span class="ov-section-title">Latest intent signals</span>
-              <button class="ov-see-all" onclick="show('intent', document.querySelector('[onclick*=intent]'))">See all →</button>
+              <button class="ov-see-all" onclick="show('intent', document.querySelector('[onclick*=\"intent\"]'))">See all →</button>
             </div>
             <div class="ov-card" id="intent-preview"></div>
           </div>
@@ -639,7 +751,7 @@ td.note { color: var(--ink-3); font-size: 13px; max-width: 200px; line-height: 1
           <div class="ov-col">
             <div class="ov-section-hdr">
               <span class="ov-section-title">Priority leads</span>
-              <button class="ov-see-all" onclick="show('leads', document.querySelector('[onclick*=leads]'))">See all →</button>
+              <button class="ov-see-all" onclick="show('leads', document.querySelector('[onclick*=\"leads\"]'))">See all →</button>
             </div>
             <div class="ov-card" id="lead-preview"></div>
           </div>
@@ -986,10 +1098,13 @@ async function loadAll() {
   renderUrgent();
   renderIntentPreview();
   renderLeadPreview();
+  // Ensure lead preview is populated even if leads loaded first
+  if (LEADS.length > 0) renderLeadPreview();
   const now = new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
   document.getElementById('last-refresh-label').textContent = `Refreshed ${now}`;
   document.getElementById('ctx-time').textContent = now;
-  document.getElementById('live-text').textContent = `${LEADS.filter(l=>l.status==='Open').length} open leads · ${INTENT.length} signals · ${TASKS.length} tasks`;
+  document.getElementById('live-text').textContent = `${LEADS.filter(l=>l.status==='Open').length} leads · ${INTENT.length} signals · ${TASKS.length} tasks`;
+  document.getElementById('live-pill').title = 'All data sources connected and live';
 }
 
 async function refreshAll() {
@@ -1507,50 +1622,51 @@ async function send() {
 async function writeLeadToOneDrive(l) {
   try {
     TOKEN = await getToken();
-    if (!TOKEN) { console.warn('No token for lead write'); return; }
-    // Get sheet name
-    const wsResp = await fetch(
+    if (!TOKEN) { console.warn('No token'); return; }
+
+    // Step 1: Open a workbook session for reliable writes
+    const sessionResp = await fetch(
+      `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${LEAD_ITEM_ID}/workbook/createSession`,
+      { method: 'POST', headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ persistChanges: true }) }
+    );
+    const session = await sessionResp.json();
+    const sessionId = session.id;
+    if (!sessionId) { console.error('No session ID for lead write:', session); return; }
+
+    // Step 2: Get worksheets
+    const ws = await fetch(
       `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${LEAD_ITEM_ID}/workbook/worksheets`,
-      { headers: { Authorization: `Bearer ${TOKEN}` } }
-    );
-    const ws = await wsResp.json();
-    if (!ws.value || !ws.value.length) { console.warn('No worksheets found'); return; }
+      { headers: { Authorization: `Bearer ${TOKEN}`, 'workbook-session-id': sessionId } }
+    ).then(r => r.json());
     const sheetName = ws.value[0].name;
-    // Get row count to append
-    const rangeResp = await fetch(
+
+    // Step 3: Get used range row count
+    const range = await fetch(
       `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${LEAD_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`,
-      { headers: { Authorization: `Bearer ${TOKEN}` } }
-    );
-    const range = await rangeResp.json();
-    const rowNum = (range.rowCount || 10) + 1;
-    // Columns: S.no, Company, Brief, Status, Potential ticket size, Mandate type, Date received, Teaser, Points of Contact, Phone, Email, Progress, Action (Next steps), Lead by, Person Responsible, Other Notes
+      { headers: { Authorization: `Bearer ${TOKEN}`, 'workbook-session-id': sessionId } }
+    ).then(r => r.json());
+    const rowNum = (range.rowCount || 5) + 1;
+
+    // Step 4: Write row
     const values = [[
-      String(LEADS.length),
-      l.company || '',
-      l.brief || '',
-      l.status || 'Open',
-      l.size || '',
-      (l.type || 'Sell') + '-side',
-      l.date || new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}),
-      'N',
-      l.contact || '',
-      '', '',
-      '',
-      l.next || '',
-      l.lead || '',
-      l.lead || '',
-      ''
+      String(LEADS.length), l.company||'', l.brief||'', l.status||'Open',
+      l.size||'', (l.type||'Sell')+'-side (Distressed and otherwise)',
+      l.date||new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),
+      'N', l.contact||'', '', '', '', l.next||'', l.lead||'', l.lead||'', ''
     ]];
-    const patchResp = await fetch(
+
+    const patch = await fetch(
       `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${LEAD_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/range(address='A${rowNum}:P${rowNum}')`,
-      {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ values })
-      }
+      { method: 'PATCH', headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json', 'workbook-session-id': sessionId }, body: JSON.stringify({ values }) }
     );
-    if (patchResp.ok) { console.log('✅ Lead written to OneDrive row', rowNum); }
-    else { const err = await patchResp.json(); console.error('❌ Lead write failed:', patchResp.status, err); }
+    if (patch.ok) console.log('✅ Lead written to OneDrive row', rowNum);
+    else { const e = await patch.json(); console.error('❌ Lead write failed:', patch.status, e); }
+
+    // Step 5: Close session
+    await fetch(
+      `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${LEAD_ITEM_ID}/workbook/closeSession`,
+      { method: 'POST', headers: { Authorization: `Bearer ${TOKEN}`, 'workbook-session-id': sessionId } }
+    );
   } catch(e) { console.error('Lead OneDrive error:', e); }
 }
 
@@ -1559,46 +1675,55 @@ async function writeLeadToOneDrive(l) {
 async function writeIntentToOneDrive(i) {
   try {
     TOKEN = await getToken();
-    if (!TOKEN) { console.warn('No token for intent write'); return; }
-    const wsResp = await fetch(
+    if (!TOKEN) { console.warn('No token'); return; }
+
+    const sessionResp = await fetch(
+      `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/createSession`,
+      { method: 'POST', headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ persistChanges: true }) }
+    );
+    const session = await sessionResp.json();
+    const sessionId = session.id;
+    if (!sessionId) { console.error('No session ID for intent write:', session); return; }
+
+    const ws = await fetch(
       `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/worksheets`,
-      { headers: { Authorization: `Bearer ${TOKEN}` } }
-    );
-    const ws = await wsResp.json();
-    if (!ws.value || !ws.value.length) { console.warn('No worksheets found'); return; }
+      { headers: { Authorization: `Bearer ${TOKEN}`, 'workbook-session-id': sessionId } }
+    ).then(r => r.json());
     const sheetName = ws.value[0].name;
-    const rangeResp = await fetch(
+
+    const range = await fetch(
       `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`,
-      { headers: { Authorization: `Bearer ${TOKEN}` } }
-    );
-    const range = await rangeResp.json();
-    const rowNum = (range.rowCount || 10) + 1;
-    // Columns match actual intent sheet: S.no, Date discovered, Intent spotted at, Investor, Location, Primary Product, Sector, Sectors Intent on, Products intent on, Deal range, Intent Source, Person, Designation, Email, Phone, Date Contacted, Comments
+      { headers: { Authorization: `Bearer ${TOKEN}`, 'workbook-session-id': sessionId } }
+    ).then(r => r.json());
+    const rowNum = (range.rowCount || 5) + 1;
+
+    // Intent sheet columns: S.no, Date discovered, Intent spotted at, Investor, Location, Primary Product, Sector, Sectors Intent on, Products intent on, Deal range, Intent Source, Person, Designation, Email, Phone, Date Contacted, Comments
     const values = [[
       String(INTENT.length),
-      i.date || new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}),
-      i.source || '',
-      i.company || '',
+      i.date||new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),
+      i.source||'',
+      i.company||'',
+      '', '',
+      i.sector||'',
+      i.intent||'',
       '',
-      '',
-      i.sector || '',
-      i.intent || '',
-      '',
-      i.range || '',
-      i.source || '',
-      i.contact || '',
+      i.range||'',
+      i.source||'',
+      i.contact||'',
       '', '', '', '', ''
     ]];
-    const patchResp = await fetch(
+
+    const patch = await fetch(
       `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/range(address='A${rowNum}:Q${rowNum}')`,
-      {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ values })
-      }
+      { method: 'PATCH', headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json', 'workbook-session-id': sessionId }, body: JSON.stringify({ values }) }
     );
-    if (patchResp.ok) { console.log('✅ Intent written to OneDrive row', rowNum); }
-    else { const err = await patchResp.json(); console.error('❌ Intent write failed:', patchResp.status, err); }
+    if (patch.ok) console.log('✅ Intent written to OneDrive row', rowNum);
+    else { const e = await patch.json(); console.error('❌ Intent write failed:', patch.status, e); }
+
+    await fetch(
+      `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/closeSession`,
+      { method: 'POST', headers: { Authorization: `Bearer ${TOKEN}`, 'workbook-session-id': sessionId } }
+    );
   } catch(e) { console.error('Intent OneDrive error:', e); }
 }
 
