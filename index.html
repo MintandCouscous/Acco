@@ -838,19 +838,13 @@ tr { transition: background 0.1s; }
 
         <!-- ── THREE COLUMNS ── -->
         <div class="ov-3col">
-
-          <!-- TASKS -->
           <div class="ov-3col-col">
             <div class="ov-3col-hdr">
-              <span class="ov-3col-title">Overdue & due soon</span>
+              <span class="ov-3col-title">Overdue &amp; due soon</span>
               <button class="ov-3col-all" onclick="show('tasks',document.querySelectorAll('.nav-btn')[1])">All tasks →</button>
             </div>
-            <div class="ov-3col-card" id="urgent-box">
-              <div class="data-loading"><div class="spin"></div>Loading...</div>
-            </div>
+            <div class="ov-3col-card" id="urgent-box"><div class="data-loading"><div class="spin"></div>Loading...</div></div>
           </div>
-
-          <!-- INTENT -->
           <div class="ov-3col-col">
             <div class="ov-3col-hdr">
               <span class="ov-3col-title">Latest intent signals</span>
@@ -858,8 +852,6 @@ tr { transition: background 0.1s; }
             </div>
             <div class="ov-3col-card" id="intent-preview"></div>
           </div>
-
-          <!-- LEADS -->
           <div class="ov-3col-col">
             <div class="ov-3col-hdr">
               <span class="ov-3col-title">Priority leads</span>
@@ -867,42 +859,10 @@ tr { transition: background 0.1s; }
             </div>
             <div class="ov-3col-card" id="lead-preview"></div>
           </div>
-
         </div>
       </div>
 
-      <!-- TASKS -->
-          <div class="ov-col">
-            <div class="ov-section-hdr">
-              <span class="ov-section-title">Tasks — overdue & soon</span>
-              <button class="ov-see-all" onclick="show('tasks', document.querySelectorAll('.nav-btn')[1])">See all →</button>
-            </div>
-            <div class="ov-card" id="urgent-box"><div class="data-loading"><div class="spin"></div>Loading...</div></div>
-          </div>
-
-          <!-- INTENT -->
-          <div class="ov-col">
-            <div class="ov-section-hdr">
-              <span class="ov-section-title">Latest intent signals</span>
-              <button class="ov-see-all" onclick="show('intent', document.querySelectorAll('.nav-btn')[3])">See all →</button>
-            </div>
-            <div class="ov-card" id="intent-preview"></div>
-          </div>
-
-          <!-- LEADS -->
-          <div class="ov-col">
-            <div class="ov-section-hdr">
-              <span class="ov-section-title">Priority leads</span>
-              <button class="ov-see-all" onclick="show('leads', document.querySelectorAll('.nav-btn')[2])">See all →</button>
-            </div>
-            <div class="ov-card" id="lead-preview"></div>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- TASKS -->
-      <div id="view-tasks" class="view">
+            <div id="view-tasks" class="view">
         <div class="page-hdr">
           <div><div class="page-title">Tasks</div><div class="page-sub">Live from Google Sheets · refreshes on load</div></div>
           <div class="page-actions"><button class="add-btn" onclick="openModal('task')">+ Add task</button></div>
