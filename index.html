@@ -2174,28 +2174,37 @@ async function scanNewsForSignals() {
 EXISTING SIGNALS (do not repeat these): ${existingCos.substring(0,500)}
 EXISTING LEADS (match against these): ${existingLeads.substring(0,500)}
 
-Search for the LATEST news (last 30 days) from Economic Times, Mint, Business Standard, VCCircle, Moneycontrol about:
-1. Indian companies announcing M&A intent, acquisitions, or looking to acquire
-2. PE/VC firms announcing new investment mandates or sector focus
-3. Companies raising funding for acquisitions or expansion
-4. Hospital groups, hotel chains, industrials, FMCG, fintech companies looking to buy or sell
-5. Any investor reachouts or analyst calls where acquisition intent is mentioned
+Today is ${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}.
 
-For each signal found, respond ONLY with a JSON array (no markdown, no explanation):
+Search specifically for news from the LAST 1-3 DAYS ONLY (${new Date(Date.now()-86400000).toLocaleDateString('en-IN',{day:'2-digit',month:'long'})} to today). Do not return older news.
+
+Search these sources: Economic Times (economictimes.indiatimes.com), Mint (livemint.com), Business Standard (business-standard.com), VCCircle (vccircle.com), Moneycontrol (moneycontrol.com), Inc42 (inc42.com), Deal Street Asia.
+
+Look for:
+1. Indian companies announcing M&A intent or completed acquisitions in the last 1-3 days
+2. PE/VC funds deploying capital or announcing new mandates THIS WEEK
+3. Hospital groups, hotel chains, industrials, FMCG, fintech, EV companies looking to buy or raise
+4. Earnings calls or investor days where acquisition plans were mentioned recently
+5. Any "looking to acquire", "in talks to buy", "exploring strategic options" news from the last 72 hours
+
+PRIORITY: fresh signals from today and yesterday over anything older. If you find something from today, lead with it.
+
+For each signal, respond ONLY with a JSON array:
 [
   {
     "company": "Company name",
     "sector": "Sector",
-    "intent": "What they are looking to acquire/invest in - be specific",
-    "range": "Deal size if mentioned",
-    "source": "ET/Mint/BS/VCCircle",
+    "intent": "Specific acquisition intent — what exactly they want to buy, size, geography",
+    "range": "Deal size if mentioned (in Cr or USD)",
+    "source": "ET/Mint/BS/VCCircle/Inc42",
     "contact": "",
-    "date": "Today's date",
-    "match": "Name of our existing lead or intent signal this matches, or empty string"
+    "date": "${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-')}",
+    "match": "Name of matching company from our leads/signals list, or empty string",
+    "age": "today/yesterday/2 days ago"
   }
 ]
 
-Return 6-8 signals. Only return the JSON array, nothing else.`;
+Return 6-9 signals, prioritised by recency. Only return the JSON array, nothing else.`;
 
   try {
     const r = await fetch('/api/chat', {
@@ -2237,23 +2246,33 @@ Return 6-8 signals. Only return the JSON array, nothing else.`;
 
     // Render signals
     const today = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).replace(/ /g,'-');
+    // Sort: today first, then yesterday, then recent
+    const ageOrder = { today: 0, yesterday: 1 };
+    signals.sort((a,b) => (ageOrder[a.age]??2) - (ageOrder[b.age]??2));
     inner.innerHTML = `
-      <div class="intel-title"><span></span>Fresh signals from the news — ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>
+      <div class="intel-title"><span></span>Fresh signals — last 72 hours · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} · ${signals.filter(s=>s.age==='today').length} from today</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-        ${signals.map((s,idx) => `
+        ${signals.map((s,idx) => {
+          const ageBadge = s.age === 'today' ? '<span style="font-size:9px;font-weight:800;color:white;background:#1a6e4a;padding:2px 7px;border-radius:20px;letter-spacing:0.08em">TODAY</span>'
+            : s.age === 'yesterday' ? '<span style="font-size:9px;font-weight:800;color:#5a2a00;background:#ffe8cc;padding:2px 7px;border-radius:20px;letter-spacing:0.08em">YESTERDAY</span>'
+            : '<span style="font-size:9px;font-weight:700;color:#888;background:#f0ede8;padding:2px 7px;border-radius:20px;letter-spacing:0.06em">RECENT</span>';
+          return `
           <div class="intel-card" id="icard-${idx}">
             <div class="intel-card-header">
-              <div class="intel-card-co">${s.company||'Unknown'}</div>
-              <div class="intel-card-sector">${(s.sector||'').substring(0,20)}</div>
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                <div class="intel-card-co">${s.company||'Unknown'}</div>
+                ${ageBadge}
+              </div>
+              <div class="intel-card-sector">${(s.sector||'').substring(0,22)}</div>
             </div>
             <div class="intel-card-intent">${s.intent||''}</div>
-            ${s.match ? `<div style="font-size:11px;color:#1a6e4a;font-weight:600">🔗 Matches: ${s.match}</div>` : ''}
+            ${s.match ? `<div style="font-size:11px;color:#1a6e4a;font-weight:600;display:flex;align-items:center;gap:4px">🔗 <span>Matches: ${s.match}</span></div>` : ''}
             <div class="intel-card-footer">
               <div class="intel-card-source">${s.source||'News'} · ${s.range||'size TBD'}</div>
               <button class="intel-add-btn" id="iadd-${idx}" onclick="addNewsSignal(${idx}, ${JSON.stringify(s).replace(/"/g,'&quot;')})">+ Add signal</button>
             </div>
-          </div>
-        `).join('')}
+          </div>`;
+        }).join('')}
       </div>
     `;
 
