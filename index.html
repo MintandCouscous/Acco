@@ -709,7 +709,7 @@ const msalConfig = {
   cache: { cacheLocation: 'sessionStorage' }
 };
 const msalInstance = new msal.PublicClientApplication(msalConfig);
-const SCOPES = ['Files.Read.All', 'Sites.Read.All', 'User.Read'];
+const SCOPES = ['Files.Read.All', 'Files.ReadWrite.All', 'Sites.Read.All', 'User.Read'];
 
 let TOKEN = null;
 let TASKS = [], LEADS = [], INTENT = [];
@@ -1339,82 +1339,98 @@ async function writeLeadToOneDrive(l) {
   try {
     TOKEN = await getToken();
     if (!TOKEN) { console.warn('No token for lead write'); return; }
-    const worksheets = await fetch('https://graph.microsoft.com/v1.0/drives/' + ZEENATH_DRIVE_ID + '/items/' + LEAD_ITEM_ID + '/workbook/worksheets', { headers: { Authorization: 'Bearer ' + TOKEN } }).then(r => r.json());
-    const sheetName = worksheets.value[0].name;
-    // Get used range to find next empty row
-    const range = await fetch(`https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${LEAD_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`, { headers: { Authorization: 'Bearer ' + TOKEN } }).then(r => r.json());
-    const rowNum = range.rowCount + 1;
-    // Lead sheet columns: S.no, Company, Brief, Status, Potential ticket size, Mandate type, Date received, Teaser (Y/N), Points of Contact, Phone no, Email ID, Progress/Activities done so far, Action (Next steps), Lead by, Person Responsible, Other Notes
+    // Get sheet name
+    const wsResp = await fetch(
+      `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${LEAD_ITEM_ID}/workbook/worksheets`,
+      { headers: { Authorization: `Bearer ${TOKEN}` } }
+    );
+    const ws = await wsResp.json();
+    if (!ws.value || !ws.value.length) { console.warn('No worksheets found'); return; }
+    const sheetName = ws.value[0].name;
+    // Get row count to append
+    const rangeResp = await fetch(
+      `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${LEAD_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`,
+      { headers: { Authorization: `Bearer ${TOKEN}` } }
+    );
+    const range = await rangeResp.json();
+    const rowNum = (range.rowCount || 10) + 1;
+    // Columns: S.no, Company, Brief, Status, Potential ticket size, Mandate type, Date received, Teaser, Points of Contact, Phone, Email, Progress, Action (Next steps), Lead by, Person Responsible, Other Notes
     const values = [[
-      String(LEADS.length), // S.no
-      l.company||'',        // Company
-      l.brief||'',          // Brief
-      l.status||'Open',     // Status
-      l.size||'',           // Potential ticket size
-      (l.type||'Sell') + '-side', // Mandate type
-      l.date||'',           // Date received
-      'N',                  // Teaser Y/N
-      l.contact||'',        // Points of Contact
-      '', '',               // Phone, Email
-      '',                   // Progress
-      l.next||'',           // Action (Next steps)
-      l.lead||'',           // Lead by
-      l.lead||'',           // Person Responsible
-      ''                    // Other Notes
+      String(LEADS.length),
+      l.company || '',
+      l.brief || '',
+      l.status || 'Open',
+      l.size || '',
+      (l.type || 'Sell') + '-side',
+      l.date || new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}),
+      'N',
+      l.contact || '',
+      '', '',
+      '',
+      l.next || '',
+      l.lead || '',
+      l.lead || '',
+      ''
     ]];
-    const appendUrl = `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${LEAD_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/range(address='A${rowNum}:P${rowNum}')`;
-    await fetch(appendUrl, {
-      method: 'PATCH',
-      headers: { Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ values: values })
-    });
-    console.log('Lead written to OneDrive at row', rowNum);
-  } catch(e) {
-    console.warn('OneDrive lead write failed:', e);
-  }
+    const patchResp = await fetch(
+      `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${LEAD_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/range(address='A${rowNum}:P${rowNum}')`,
+      {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values })
+      }
+    );
+    if (patchResp.ok) { console.log('✅ Lead written to OneDrive row', rowNum); }
+    else { const err = await patchResp.json(); console.error('❌ Lead write failed:', patchResp.status, err); }
+  } catch(e) { console.error('Lead OneDrive error:', e); }
 }
+
 
 // Write intent signal to OneDrive Excel via Graph API
 async function writeIntentToOneDrive(i) {
   try {
     TOKEN = await getToken();
     if (!TOKEN) { console.warn('No token for intent write'); return; }
-    // Get current used range to find next empty row
-    const rangeUrl = 'https://graph.microsoft.com/v1.0/drives/' + ZEENATH_DRIVE_ID + '/items/' + INTENT_ITEM_ID + '/workbook/worksheets(\'Sheet1\')/usedRange';
-    const range = await fetch(rangeUrl, { headers: { Authorization: 'Bearer ' + TOKEN } }).then(r => r.json());
-    const nextRow = range.rowCount + 1;
-    const rowNum = range.address ? parseInt(range.address.match(/\d+$/)) + 1 : nextRow;
-
-    // Append row - columns: S.no, Date discovered, Intent spotted at, Investor, Location, Primary Product, Sector, Sectors Intent on, Products intent on, Deal range, Intent Source, Person, Designation, Email, Phone, Date Contacted, Comments
+    const wsResp = await fetch(
+      `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/worksheets`,
+      { headers: { Authorization: `Bearer ${TOKEN}` } }
+    );
+    const ws = await wsResp.json();
+    if (!ws.value || !ws.value.length) { console.warn('No worksheets found'); return; }
+    const sheetName = ws.value[0].name;
+    const rangeResp = await fetch(
+      `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`,
+      { headers: { Authorization: `Bearer ${TOKEN}` } }
+    );
+    const range = await rangeResp.json();
+    const rowNum = (range.rowCount || 10) + 1;
+    // Columns match actual intent sheet: S.no, Date discovered, Intent spotted at, Investor, Location, Primary Product, Sector, Sectors Intent on, Products intent on, Deal range, Intent Source, Person, Designation, Email, Phone, Date Contacted, Comments
     const values = [[
-      '', // S.no (auto or leave blank)
-      i.date||'',
-      i.source||'',
-      i.company||'',
-      '', // Location
-      '', // Primary product
-      i.sector||'',
-      i.intent||'',
-      '', // Products intent on
-      i.range||'',
-      i.source||'',
-      i.contact||'',
+      String(INTENT.length),
+      i.date || new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}),
+      i.source || '',
+      i.company || '',
+      '',
+      '',
+      i.sector || '',
+      i.intent || '',
+      '',
+      i.range || '',
+      i.source || '',
+      i.contact || '',
       '', '', '', '', ''
     ]];
-
-    const worksheets = await fetch('https://graph.microsoft.com/v1.0/drives/' + ZEENATH_DRIVE_ID + '/items/' + INTENT_ITEM_ID + '/workbook/worksheets', { headers: { Authorization: 'Bearer ' + TOKEN } }).then(r => r.json());
-    const sheetName = worksheets.value[0].name;
-    const appendUrl = `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/range(address='A${rowNum}:Q${rowNum}')`;
-
-    await fetch(appendUrl, {
-      method: 'PATCH',
-      headers: { Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ values: values })
-    });
-    console.log('Intent written to OneDrive at row', rowNum);
-  } catch(e) {
-    console.warn('OneDrive intent write failed:', e);
-  }
+    const patchResp = await fetch(
+      `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/range(address='A${rowNum}:Q${rowNum}')`,
+      {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values })
+      }
+    );
+    if (patchResp.ok) { console.log('✅ Intent written to OneDrive row', rowNum); }
+    else { const err = await patchResp.json(); console.error('❌ Intent write failed:', patchResp.status, err); }
+  } catch(e) { console.error('Intent OneDrive error:', e); }
 }
 
 
