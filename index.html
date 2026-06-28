@@ -360,170 +360,179 @@ td.note { color: var(--ink-3); font-size: 13px; max-width: 200px; line-height: 1
 .match-to { font-size: 12px; color: var(--ink-4); margin-top: 2px; }
 
 
-/* ── OVERVIEW — WATERCOLOR JUNGLE ── */
-#view-overview { background: white !important; padding: 0 !important; }
+/* ── JUNGLE OVERVIEW ── */
+#view-overview { padding: 0 !important; background: white !important; }
 .content { background: white !important; }
 .view { background: white; }
 
-/* HERO — lush gradient wash */
-.ov-hero {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 44px 44px 36px;
-  background: linear-gradient(135deg, #f0faf4 0%, #fdf8f0 50%, #f0f4fa 100%);
-  border-bottom: 1px solid rgba(0,0,0,0.06);
+/* HERO */
+.hero {
   position: relative; overflow: hidden;
+  min-height: 220px;
+  background: linear-gradient(160deg, #f0faf5 0%, #fefdf8 40%, #f5f0fa 100%);
 }
-.ov-hero::before {
-  content: '';
-  position: absolute; top: -60px; right: -60px;
-  width: 300px; height: 300px;
-  background: radial-gradient(circle, rgba(26,110,74,0.08) 0%, transparent 70%);
-  border-radius: 50%; pointer-events: none;
+.hero-canopy {
+  position: absolute; inset: 0; z-index: 0;
 }
-.ov-hero::after {
-  content: '';
-  position: absolute; bottom: -40px; left: 30%;
-  width: 200px; height: 200px;
-  background: radial-gradient(circle, rgba(184,146,58,0.08) 0%, transparent 70%);
-  border-radius: 50%; pointer-events: none;
+.canopy-svg {
+  width: 100%; height: 100%; object-fit: cover;
 }
-.ov-greeting {
-  font-family: var(--serif); font-size: 40px; color: #0a0a0a;
-  letter-spacing: -1.5px; line-height: 1; position: relative; z-index: 1;
+.hero-content {
+  position: relative; z-index: 2;
+  display: flex; align-items: flex-end; justify-content: space-between;
+  padding: 48px 44px 36px;
 }
-.ov-date { font-size: 13px; color: #888; margin-top: 8px; letter-spacing: 0.03em; position: relative; z-index: 1; }
-.ov-hero-actions { display: flex; gap: 8px; align-items: center; position: relative; z-index: 1; }
-.ov-add-btn {
-  padding: 10px 22px; border-radius: 100px; font-size: 13px; font-weight: 500;
-  cursor: pointer; font-family: var(--sans); transition: all 0.2s cubic-bezier(0.4,0,0.2,1); border: none;
+.hero-greeting {
+  font-family: var(--serif); font-size: 52px; color: #0a2a18;
+  letter-spacing: -2px; line-height: 1; 
+  text-shadow: 0 2px 40px rgba(255,255,255,0.8);
 }
-.ov-add-btn.primary {
-  background: #0a2a18; color: white;
-  box-shadow: 0 4px 16px rgba(10,42,24,0.25);
+.hero-date { font-size: 13px; color: #4a7a5a; margin-top: 8px; font-weight: 500; letter-spacing: 0.04em; }
+.hero-right { display: flex; gap: 8px; align-items: center; }
+.hero-btn {
+  padding: 11px 24px; border-radius: 100px; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: var(--sans);
+  transition: all 0.2s cubic-bezier(0.4,0,0.2,1); border: none; letter-spacing: 0.02em;
 }
-.ov-add-btn.primary:hover { background: #1a6e4a; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,110,74,0.3); }
-.ov-add-btn.secondary { background: rgba(255,255,255,0.7); color: #444; border: 1px solid rgba(0,0,0,0.1); backdrop-filter: blur(8px); }
-.ov-add-btn.secondary:hover { background: white; border-color: #1a6e4a; color: #1a6e4a; transform: translateY(-2px); }
+.hero-btn.solid {
+  background: #0a2a18; color: #4ade80;
+  box-shadow: 0 4px 20px rgba(10,42,24,0.3);
+}
+.hero-btn.solid:hover { background: #1a6e4a; transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 30px rgba(26,110,74,0.4); }
+.hero-btn.ghost {
+  background: rgba(255,255,255,0.65); color: #0a2a18;
+  border: 1.5px solid rgba(10,42,24,0.15); backdrop-filter: blur(12px);
+}
+.hero-btn.ghost:hover { background: white; border-color: #1a6e4a; color: #1a6e4a; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
 
-/* STAT STRIP — dark forest */
-.ov-stats {
-  display: flex; align-items: stretch;
-  background: #0a2a18;
+/* STAT STRIP */
+.strip {
+  display: flex; background: #0a2a18;
   position: relative; overflow: hidden;
 }
-.ov-stats::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(26,110,74,0.4) 0%, transparent 60%);
+.strip::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 80% 100% at 0% 50%, rgba(74,222,128,0.1) 0%, transparent 60%);
   pointer-events: none;
 }
-.ov-stat {
-  flex: 1; text-align: center; padding: 30px 16px;
-  position: relative; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); cursor: pointer;
-  z-index: 1;
+.strip-stat {
+  flex: 1; text-align: center; padding: 28px 12px;
+  cursor: pointer; position: relative; z-index: 1;
+  transition: all 0.2s; display: flex; flex-direction: column; align-items: center;
 }
-.ov-stat:hover { background: rgba(255,255,255,0.07); }
-.ov-stat:active { background: rgba(255,255,255,0.12); }
-.ov-stat::after {
-  content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
-  width: 0; height: 2px; background: #4ade80;
-  transition: width 0.3s ease;
-}
-.ov-stat:hover::after { width: 50%; }
-.ov-stat-num {
-  font-family: var(--serif); font-size: 48px; color: white;
+.strip-stat:hover { background: rgba(74,222,128,0.08); }
+.strip-stat:hover .strip-num { transform: scale(1.1) translateY(-3px); }
+.strip-num {
+  font-family: var(--serif); font-size: 52px; color: white;
   line-height: 1; letter-spacing: -2px; display: block;
-  transition: transform 0.2s; text-shadow: 0 2px 20px rgba(0,0,0,0.3);
+  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
 }
-.ov-stat:hover .ov-stat-num { transform: scale(1.06) translateY(-2px); }
-.ov-stat-num.red { color: #ff8a80; }
-.ov-stat-num.amber { color: #ffd54f; }
-.ov-stat-label {
-  font-size: 10px; color: rgba(255,255,255,0.45); margin-top: 10px;
-  text-transform: uppercase; letter-spacing: 0.14em; font-weight: 600; display: block;
+.strip-num.red { color: #ff8a80; }
+.strip-num.amber { color: #ffd54f; }
+.strip-label {
+  font-size: 9px; color: rgba(255,255,255,0.4); margin-top: 10px;
+  text-transform: uppercase; letter-spacing: 0.16em; font-weight: 700;
 }
-.ov-stat-div { width: 1px; background: rgba(255,255,255,0.07); flex-shrink: 0; }
+.strip-stat:hover .strip-label { color: rgba(255,255,255,0.7); }
+.strip-div { width: 1px; background: rgba(255,255,255,0.06); flex-shrink: 0; }
 
-/* 3-COL GRID */
-.ov-grid {
+/* 3 COLUMNS */
+.ov-3col {
   display: grid; grid-template-columns: 1fr 1fr 1fr;
-  gap: 0; padding: 0;
-  background: white;
+  min-height: 400px;
 }
-.ov-col { display: flex; flex-direction: column; padding: 28px; border-right: 1px solid #f0ede8; }
-.ov-col:last-child { border-right: none; }
-
-.ov-section-hdr {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 16px;
+.ov-3col-col {
+  padding: 28px 28px; border-right: 1px solid #f0ede8;
+  display: flex; flex-direction: column;
 }
-.ov-section-title {
-  font-size: 10px; font-weight: 700; color: #aaa;
-  text-transform: uppercase; letter-spacing: 0.14em;
+.ov-3col-col:last-child { border-right: none; }
+.ov-3col-hdr {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
 }
-.ov-see-all {
+.ov-3col-title {
+  font-size: 9px; font-weight: 800; color: #bbb;
+  text-transform: uppercase; letter-spacing: 0.16em;
+}
+.ov-3col-all {
   font-size: 11px; color: #1a6e4a; background: none; border: none;
   cursor: pointer; font-family: var(--sans); font-weight: 600;
-  padding: 0; transition: all 0.15s; display: flex; align-items: center; gap: 2px;
+  transition: all 0.15s;
 }
-.ov-see-all:hover { color: #0a2a18; transform: translateX(3px); }
-
-/* Floating cards */
-.ov-card {
-  background: white; border: 1.5px solid #f0ede8; border-radius: 16px;
-  overflow: hidden; transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 0 0 0 rgba(26,110,74,0);
+.ov-3col-all:hover { color: #0a2a18; transform: translateX(4px); }
+.ov-3col-card {
+  border: 1.5px solid #f0ede8; border-radius: 16px; overflow: hidden; flex: 1;
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
-.ov-card:hover {
+.ov-3col-card:hover {
   border-color: rgba(26,110,74,0.2);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.08), 0 0 0 1px rgba(26,110,74,0.1);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.08), 0 0 0 1px rgba(26,110,74,0.1);
   transform: translateY(-4px);
 }
 
-/* Task rows in overview */
-.ov-card .task-row {
-  padding: 11px 16px; border-bottom: 1px solid #f5f2ec;
-  transition: all 0.15s; cursor: default;
+/* Task rows in ov cards */
+.ov-3col-card .task-row {
+  padding: 12px 16px; border-bottom: 1px solid #f5f2ec;
+  transition: all 0.15s; cursor: default; display: flex; gap: 12px; align-items: flex-start;
 }
-.ov-card .task-row:hover { background: #f7faf8; padding-left: 20px; }
-.ov-card .task-row:last-child { border-bottom: none; }
-.ov-card .task-row.ov { border-left: 3px solid #ff8a80; }
-.ov-card .task-row.soon { border-left: 3px solid #ffd54f; }
-.ov-card .task-row.ip { border-left: 3px solid #4ade80; }
-.ov-card .task-name { font-size: 13px; color: #0a0a0a; }
-.ov-card .task-meta { font-size: 11px; color: #999; }
+.ov-3col-card .task-row:hover { background: #f7faf8; padding-left: 20px; }
+.ov-3col-card .task-row:last-child { border-bottom: none; }
+.ov-3col-card .task-row.ov { border-left: 3px solid #e53935; }
+.ov-3col-card .task-row.soon { border-left: 3px solid #f57f17; }
+.ov-3col-card .task-row.ip { border-left: 3px solid #D4A84B; }
+.ov-3col-card .task-name { font-size: 13px; color: #0a0a0a; font-weight: 500; line-height: 1.4; }
+.ov-3col-card .task-meta { font-size: 11px; color: #aaa; margin-top: 2px; }
 
 /* Intent rows */
-.ov-card .intent-row {
+.ov-3col-card .intent-row {
   padding: 12px 16px; border-bottom: 1px solid #f5f2ec;
   transition: all 0.15s;
 }
-.ov-card .intent-row:hover { background: #f7faf8; padding-left: 20px; }
-.ov-card .intent-row:last-child { border-bottom: none; }
-.ov-card .intent-name { font-size: 13px; font-weight: 500; color: #0a0a0a; }
-.ov-card .intent-sub { font-size: 11px; color: #999; margin: 2px 0 6px; }
+.ov-3col-card .intent-row:hover { background: #f7faf8; padding-left: 20px; }
+.ov-3col-card .intent-row:last-child { border-bottom: none; }
+.ov-3col-card .intent-name { font-size: 13px; font-weight: 500; color: #0a0a0a; }
+.ov-3col-card .intent-sub { font-size: 11px; color: #aaa; margin: 2px 0 6px; }
 
-/* Lead rows in overview */
-.ov-card .task-row.ip { border-left: 3px solid #D4A84B; }
-.ov-card .task-row.ip:hover { border-left-color: #1a6e4a; }
+/* Lead rows */
+.ov-3col-card .task-row.ip:hover { border-left-color: #1a6e4a; }
 
-/* Sidebar tweaks for jungle feel */
+/* SIDEBAR */
+.sidebar { background: white !important; border-right: 1px solid #f0ede8 !important; }
 .nav-btn.active { background: #0a2a18 !important; }
-.nav-btn:hover { background: #f0faf4 !important; color: #0a2a18 !important; }
+.nav-btn:hover:not(.active) { background: #f0faf4 !important; color: #0a2a18 !important; }
 
-/* Topbar clean */
-.topbar { background: white !important; border-bottom: 1px solid #f0ede8 !important; }
-.t-wordmark { color: #0a0a0a !important; }
-.t-subtitle { color: #aaa !important; }
-.live-pill { background: #f0faf4 !important; border-color: rgba(26,110,74,0.15) !important; color: #1a6e4a !important; }
-.live-dot { background: #4ade80 !important; box-shadow: 0 0 8px rgba(74,222,128,0.5) !important; }
-.topbar-btn { background: #f5f2eb !important; border-color: #e8e4dc !important; color: #333 !important; }
-.topbar-btn:hover { background: #0a2a18 !important; color: white !important; border-color: #0a2a18 !important; }
-.user-av { background: #0a2a18 !important; color: #4ade80 !important; }
+/* People view - make team cards clickable to filter their tasks */
+.person-card { cursor: pointer; }
+.person-card:hover { border-color: rgba(26,110,74,0.3) !important; }
 
-/* Due badges more vibrant */
-.due-ov { background: #fff0ee !important; color: #e53935 !important; border: 1px solid #ffcdd2; font-weight: 500; }
-.due-soon { background: #fffde7 !important; color: #f57f17 !important; border: 1px solid #fff9c4; font-weight: 500; }
+/* TOPBAR */
+.topbar { background: white !important; border-bottom: 1px solid #f0ede8 !important; box-shadow: 0 1px 20px rgba(0,0,0,0.04) !important; }
+.t-wordmark { color: #0a2a18 !important; font-family: var(--serif) !important; }
+.t-subtitle { color: #aaa !important; font-size: 11px !important; }
+.live-pill { background: #f0faf4 !important; border-color: rgba(26,110,74,0.2) !important; color: #1a6e4a !important; font-size: 11px !important; }
+.live-dot { background: #4ade80 !important; box-shadow: 0 0 8px rgba(74,222,128,0.6) !important; }
+.topbar-btn { background: white !important; border: 1.5px solid #e8e4dc !important; color: #333 !important; border-radius: 100px !important; }
+.topbar-btn:hover { background: #0a2a18 !important; color: #4ade80 !important; border-color: #0a2a18 !important; }
+.user-av { background: #0a2a18 !important; color: #4ade80 !important; font-size: 12px !important; }
+.user-name { color: #444 !important; font-weight: 500 !important; }
+
+/* Due badges */
+.due-ov { background: #fff0ee !important; color: #e53935 !important; border: 1px solid #ffcdd2 !important; font-weight: 600 !important; }
+.due-soon { background: #fffde7 !important; color: #e65100 !important; border: 1px solid #fff9c4 !important; font-weight: 600 !important; }
+
+/* Badge colors more vibrant */
+.b-open { background: #e8f5ee !important; color: #1a6e4a !important; }
+.b-buy { background: #e8f0ff !important; color: #1a3a9e !important; }
+.b-sell { background: #f3e8ff !important; color: #5b1a9e !important; }
+.b-ip { background: #fff8e8 !important; color: #8a5a00 !important; }
+
+/* Acco chat header */
+.acco-hdr { background: #0a2a18 !important; }
+.acco-mark { background: #4ade80 !important; color: #0a2a18 !important; }
+.m-av { background: #0a2a18 !important; color: #4ade80 !important; }
+
+/* People cards clickable */
+.person-card:hover .ps { background: #f0faf4 !important; }
 
 
 /* ── MICRO-INTERACTIONS ── */
@@ -729,53 +738,140 @@ tr { transition: background 0.1s; }
     <main class="content">
 
       <!-- OVERVIEW -->
-      <div id="view-overview" class="view active" style="padding:0;background:white;min-height:100%">
+      <div id="view-overview" class="view active" style="padding:0;min-height:100%;background:white">
 
-        <!-- HERO -->
-        <div class="ov-hero">
-          <div>
-            <div class="ov-greeting" id="greeting-name">Good morning, Accomplir</div>
-            <div class="ov-date" id="today-str">—</div>
+        <!-- ── JUNGLE HERO ── -->
+        <div class="hero">
+          <div class="hero-canopy">
+            <!-- SVG Canopy Illustration -->
+            <svg class="canopy-svg" viewBox="0 0 1400 320" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+              <!-- Sky wash -->
+              <defs>
+                <radialGradient id="sun" cx="75%" cy="20%" r="60%">
+                  <stop offset="0%" stop-color="#fff9e6" stop-opacity="0.6"/>
+                  <stop offset="100%" stop-color="#f0faf4" stop-opacity="0"/>
+                </radialGradient>
+                <radialGradient id="glow1" cx="20%" cy="80%" r="50%">
+                  <stop offset="0%" stop-color="#1a6e4a" stop-opacity="0.12"/>
+                  <stop offset="100%" stop-color="transparent"/>
+                </radialGradient>
+              </defs>
+              <rect width="1400" height="320" fill="url(#sun)"/>
+              <rect width="1400" height="320" fill="url(#glow1)"/>
+              <!-- Far background trees -->
+              <ellipse cx="100" cy="280" rx="90" ry="130" fill="#2d5a3d" opacity="0.15"/>
+              <ellipse cx="200" cy="290" rx="70" ry="110" fill="#1a6e4a" opacity="0.12"/>
+              <ellipse cx="1250" cy="280" rx="100" ry="140" fill="#2d5a3d" opacity="0.15"/>
+              <ellipse cx="1350" cy="295" rx="80" ry="120" fill="#1a6e4a" opacity="0.1"/>
+              <!-- Mid canopy blobs -->
+              <ellipse cx="0" cy="260" rx="160" ry="200" fill="#1a6e4a" opacity="0.22"/>
+              <ellipse cx="80" cy="320" rx="140" ry="180" fill="#0a4a2a" opacity="0.18"/>
+              <ellipse cx="250" cy="310" rx="120" ry="160" fill="#2d8a5a" opacity="0.16"/>
+              <ellipse cx="1400" cy="260" rx="160" ry="200" fill="#1a6e4a" opacity="0.22"/>
+              <ellipse cx="1320" cy="320" rx="140" ry="180" fill="#0a4a2a" opacity="0.18"/>
+              <ellipse cx="1150" cy="310" rx="120" ry="160" fill="#2d8a5a" opacity="0.16"/>
+              <!-- Hanging leaves left -->
+              <ellipse cx="30" cy="20" rx="60" ry="40" fill="#1a6e4a" opacity="0.3" transform="rotate(-15 30 20)"/>
+              <ellipse cx="120" cy="0" rx="80" ry="50" fill="#0a4a2a" opacity="0.25" transform="rotate(10 120 0)"/>
+              <ellipse cx="220" cy="10" rx="70" ry="45" fill="#2d8a5a" opacity="0.2" transform="rotate(-5 220 10)"/>
+              <!-- Hanging leaves right -->
+              <ellipse cx="1370" cy="20" rx="60" ry="40" fill="#1a6e4a" opacity="0.3" transform="rotate(15 1370 20)"/>
+              <ellipse cx="1280" cy="0" rx="80" ry="50" fill="#0a4a2a" opacity="0.25" transform="rotate(-10 1280 0)"/>
+              <ellipse cx="1180" cy="10" rx="70" ry="45" fill="#2d8a5a" opacity="0.2" transform="rotate(5 1180 10)"/>
+              <!-- Tropical accents -->
+              <path d="M 50 50 Q 150 -20 180 80" stroke="#4ade80" stroke-width="2" fill="none" opacity="0.3"/>
+              <path d="M 1350 50 Q 1250 -20 1220 80" stroke="#4ade80" stroke-width="2" fill="none" opacity="0.3"/>
+              <!-- Gold light rays -->
+              <path d="M 1050 0 L 900 320" stroke="#D4A84B" stroke-width="60" stroke-opacity="0.06"/>
+              <path d="M 1150 0 L 1050 320" stroke="#D4A84B" stroke-width="40" stroke-opacity="0.04"/>
+              <!-- Fireflies / bokeh -->
+              <circle cx="400" cy="80" r="3" fill="#4ade80" opacity="0.5"/>
+              <circle cx="600" cy="50" r="2" fill="#D4A84B" opacity="0.6"/>
+              <circle cx="800" cy="90" r="2.5" fill="#4ade80" opacity="0.4"/>
+              <circle cx="950" cy="60" r="2" fill="#D4A84B" opacity="0.5"/>
+              <circle cx="350" cy="130" r="1.5" fill="#4ade80" opacity="0.35"/>
+              <circle cx="700" cy="40" r="3" fill="#4ade80" opacity="0.3"/>
+              <circle cx="1100" cy="100" r="2" fill="#D4A84B" opacity="0.4"/>
+            </svg>
           </div>
-          <div class="ov-hero-actions">
-            <button class="ov-add-btn secondary" onclick="openModal('intent')">+ Signal</button>
-            <button class="ov-add-btn secondary" onclick="openModal('lead')">+ Lead</button>
-            <button class="ov-add-btn primary" onclick="openModal('task')">+ Task</button>
+          <!-- Hero content -->
+          <div class="hero-content">
+            <div class="hero-left">
+              <div class="hero-greeting" id="greeting-name">Good morning</div>
+              <div class="hero-date" id="today-str">—</div>
+            </div>
+            <div class="hero-right">
+              <button class="hero-btn ghost" onclick="openModal('intent')">+ Signal</button>
+              <button class="hero-btn ghost" onclick="openModal('lead')">+ Lead</button>
+              <button class="hero-btn solid" onclick="openModal('task')">+ Task</button>
+            </div>
           </div>
         </div>
 
-        <!-- DARK STAT STRIP — fully clickable -->
-        <div class="ov-stats">
-          <div class="ov-stat" onclick="show('leads', document.querySelector('[onclick*=leads]')); document.getElementById('l-status').value='Open'; filterLeads();" title="View open leads">
-            <span class="ov-stat-num" id="s-leads">—</span>
-            <span class="ov-stat-label">Open leads ↗</span>
+        <!-- ── STAT STRIP ── -->
+        <div class="strip">
+          <div class="strip-stat" onclick="show('leads',document.querySelectorAll('.nav-btn')[2])">
+            <div class="strip-num" id="s-leads">—</div>
+            <div class="strip-label">Open leads ↗</div>
           </div>
-          <div class="ov-stat-div"></div>
-          <div class="ov-stat" onclick="show('intent', document.querySelectorAll('.nav-btn')[3])" title="View intent signals">
-            <span class="ov-stat-num" id="s-intent">—</span>
-            <span class="ov-stat-label">Intent signals ↗</span>
+          <div class="strip-div"></div>
+          <div class="strip-stat" onclick="show('intent',document.querySelectorAll('.nav-btn')[3])">
+            <div class="strip-num" id="s-intent">—</div>
+            <div class="strip-label">Intent signals ↗</div>
           </div>
-          <div class="ov-stat-div"></div>
-          <div class="ov-stat" onclick="show('tasks', document.querySelectorAll('.nav-btn')[1])" title="View all tasks">
-            <span class="ov-stat-num" id="s-tasks">—</span>
-            <span class="ov-stat-label">Total tasks ↗</span>
+          <div class="strip-div"></div>
+          <div class="strip-stat" onclick="show('tasks',document.querySelectorAll('.nav-btn')[1])">
+            <div class="strip-num" id="s-tasks">—</div>
+            <div class="strip-label">Total tasks ↗</div>
           </div>
-          <div class="ov-stat-div"></div>
-          <div class="ov-stat" onclick="show('tasks', document.querySelector('[onclick*=tasks]')); document.getElementById('t-status').value='not started'; filterTasks();" title="View overdue tasks">
-            <span class="ov-stat-num red" id="s-ov">—</span>
-            <span class="ov-stat-label">Overdue ↗</span>
+          <div class="strip-div"></div>
+          <div class="strip-stat" onclick="show('tasks',document.querySelectorAll('.nav-btn')[1]);setTimeout(()=>{document.getElementById('t-status').value='not started';filterTasks();},100)">
+            <div class="strip-num red" id="s-ov">—</div>
+            <div class="strip-label">Overdue ↗</div>
           </div>
-          <div class="ov-stat-div"></div>
-          <div class="ov-stat" onclick="show('tasks', document.querySelector('[onclick*=tasks]')); document.getElementById('t-status').value='progress'; filterTasks();" title="View in-progress tasks">
-            <span class="ov-stat-num amber" id="s-ip">—</span>
-            <span class="ov-stat-label">In progress ↗</span>
+          <div class="strip-div"></div>
+          <div class="strip-stat" onclick="show('tasks',document.querySelectorAll('.nav-btn')[1]);setTimeout(()=>{document.getElementById('t-status').value='progress';filterTasks();},100)">
+            <div class="strip-num amber" id="s-ip">—</div>
+            <div class="strip-label">In progress ↗</div>
           </div>
         </div>
 
-        <!-- 3-COL GRID -->
-        <div class="ov-grid">
+        <!-- ── THREE COLUMNS ── -->
+        <div class="ov-3col">
 
           <!-- TASKS -->
+          <div class="ov-3col-col">
+            <div class="ov-3col-hdr">
+              <span class="ov-3col-title">Overdue & due soon</span>
+              <button class="ov-3col-all" onclick="show('tasks',document.querySelectorAll('.nav-btn')[1])">All tasks →</button>
+            </div>
+            <div class="ov-3col-card" id="urgent-box">
+              <div class="data-loading"><div class="spin"></div>Loading...</div>
+            </div>
+          </div>
+
+          <!-- INTENT -->
+          <div class="ov-3col-col">
+            <div class="ov-3col-hdr">
+              <span class="ov-3col-title">Latest intent signals</span>
+              <button class="ov-3col-all" onclick="show('intent',document.querySelectorAll('.nav-btn')[3])">All signals →</button>
+            </div>
+            <div class="ov-3col-card" id="intent-preview"></div>
+          </div>
+
+          <!-- LEADS -->
+          <div class="ov-3col-col">
+            <div class="ov-3col-hdr">
+              <span class="ov-3col-title">Priority leads</span>
+              <button class="ov-3col-all" onclick="show('leads',document.querySelectorAll('.nav-btn')[2])">All leads →</button>
+            </div>
+            <div class="ov-3col-card" id="lead-preview"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- TASKS -->
           <div class="ov-col">
             <div class="ov-section-hdr">
               <span class="ov-section-title">Tasks — overdue & soon</span>
@@ -1345,22 +1441,29 @@ function renderIntentPreview() {
 // ── LEAD PREVIEW ──
 function renderLeadPreview() {
   const el = document.getElementById('lead-preview');
+  if (!el) return;
   const open = [...LEADS].filter(l => l.status === 'Open')
     .sort((a,b) => (parseInt(b.n)||0) - (parseInt(a.n)||0))
-    .slice(0, 6);
+    .slice(0, 7);
+  if (!open.length) {
+    el.innerHTML = '<div style="padding:24px;text-align:center;color:#bbb;font-size:13px">Loading leads...</div>';
+    return;
+  }
   el.innerHTML = open.map(l => {
     const av = avClass(l.lead);
     const typeClass = l.type === 'Buy' ? 'b-buy' : 'b-sell';
-    return `<div class="task-row ip">
-      <div class="av ${av}">${(l.lead||'?')[0].toUpperCase()}</div>
-      <div style="flex:1">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span class="task-name">${l.co}</span>
-          <span class="badge ${typeClass}">${l.type}</span>
-          ${l.size?`<span style="font-size:11px;color:var(--ink-4)">${l.size}</span>`:''}
+    const ownerInit = (l.lead||'?')[0].toUpperCase();
+    return `<div class="task-row ip" onclick="show('leads',document.querySelectorAll('.nav-btn')[2]);setTimeout(()=>{document.getElementById('l-search').value='${l.co.replace(/'/g,'')}';filterLeads();},100)" style="cursor:pointer" title="View ${l.co}">
+      <div class="av ${av}">${ownerInit}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-size:13px;font-weight:600;color:#0a0a0a">${l.co}</span>
+          <span class="badge ${typeClass}" style="font-size:10px">${l.type}</span>
+          ${l.size?`<span style="font-size:10px;color:#aaa;font-weight:500">${l.size}</span>`:''}
         </div>
-        <div class="task-meta" style="margin-top:3px">${l.lead}${l.next?' · '+l.next.substring(0,60):''}</div>
+        <div style="font-size:11px;color:#aaa;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.lead}${l.next?' · '+l.next.substring(0,50):''}</div>
       </div>
+      <span style="font-size:11px;color:#1a6e4a;font-weight:600;flex-shrink:0">→</span>
     </div>`;
   }).join('');
 }
@@ -1523,7 +1626,7 @@ function buildPeople() {
   TASKS.forEach(t => { Object.keys(people).forEach(p => { if((t.Name||'').toLowerCase().includes(p.toLowerCase())) people[p].tasks++; }); });
   LEADS.forEach(l => { Object.keys(people).forEach(p => { if((l.lead||'').toLowerCase().includes(p.toLowerCase())) { people[p].leads++; if(l.status==='Open') people[p].open++; } }); });
   document.getElementById('people-grid').innerHTML = Object.entries(people).map(([name,d]) => `
-    <div class="person-card">
+    <div class="person-card" onclick="show('tasks',document.querySelectorAll('.nav-btn')[1]);setTimeout(()=>{document.getElementById('t-owner').value='${name}';filterTasks();},100)" title="Click to see ${name}'s tasks">
       <div class="person-hdr">
         <div class="person-av ${d.cls}" style="background:${bgMap[d.cls]};color:${fgMap[d.cls]}">${name[0]}</div>
         <div><div class="person-name">${name}</div><div class="person-role">${d.role}</div></div>
@@ -1533,6 +1636,7 @@ function buildPeople() {
         <div class="ps"><div class="ps-n">${d.leads}</div><div class="ps-l">Leads</div></div>
         <div class="ps"><div class="ps-n">${d.open}</div><div class="ps-l">Open</div></div>
       </div>
+      <div style="text-align:center;margin-top:12px;font-size:11px;color:#1a6e4a;font-weight:600;opacity:0.7">View tasks →</div>
     </div>`).join('');
 }
 
