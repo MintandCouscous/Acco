@@ -521,7 +521,7 @@ td.note { color: var(--ink-3); font-size: 13px; max-width: 200px; line-height: 1
           <span class="filter-count" id="lc-label">— leads</span>
         </div>
         <div class="tbl-wrap"><table>
-          <thead><tr><th>#</th><th>Company</th><th>Type</th><th>Size</th><th>Status</th><th>Lead by</th><th>Contact</th><th>Next action</th></tr></thead>
+          <thead><tr><th>#</th><th>Company</th><th>Type</th><th>Size</th><th>Status</th><th>Lead by</th><th>Contact</th><th>Date received</th><th>Next action</th></tr></thead>
           <tbody id="leads-body"><tr><td colspan="8"><div class="data-loading"><div class="spin"></div>Reading from OneDrive...</div></td></tr></tbody>
         </table></div>
       </div>
@@ -534,6 +534,11 @@ td.note { color: var(--ink-3); font-size: 13px; max-width: 200px; line-height: 1
         </div>
         <div class="filter-bar">
           <select id="i-sector" onchange="filterIntent()"><option value="">All sectors</option></select>
+          <select id="i-sort" onchange="filterIntent()">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="az">A→Z</option>
+          </select>
           <input id="i-search" placeholder="Search company, sector or intent..." oninput="filterIntent()">
           <span class="filter-count" id="ic-label">— signals</span>
         </div>
@@ -622,7 +627,10 @@ td.note { color: var(--ink-3); font-size: 13px; max-width: 200px; line-height: 1
             <option>Libin</option><option>Nandita</option><option>Disha</option>
           </select>
         </div>
-        <div><label>Project</label><input id="m-task-project" placeholder="e.g. Kavach, BLS, Housekeeping"></div>
+        <div><label>Project</label>
+          <input id="m-task-project" list="project-list" placeholder="Type or pick a project">
+          <datalist id="project-list"></datalist>
+        </div>
       </div>
       <div><label>Task</label><input id="m-task-name" placeholder="What needs to be done?"></div>
       <div class="modal-row">
@@ -883,6 +891,7 @@ async function fetchLeads() {
       type: (r['Mandate type'] || r['Type'] || r['mandate type'] || '').includes('Buy') ? 'Buy' : 'Sell',
       contact: r['Points of Contact'] || r['Contact'] || r['contact'] || '',
       lead: r['Lead by'] || r['Person Responsible'] || r['Lead'] || '',
+      date: r['Date received'] || r['Date'] || r['date'] || r['Date Added'] || '',
       next: r['Action (Next steps)'] || r['Next steps'] || r['Next'] || '',
       progress: r['Progress/Activites done so far'] || r['Progress'] || ''
     })).filter(r => r.co);
@@ -983,10 +992,17 @@ function renderUrgent() {
 function renderIntentPreview() {
   const el = document.getElementById('intent-preview');
   // Sort by date descending - most recent first
-  const sorted = [...INTENT].sort((a, b) => {
-    const parseDate = d => { if (!d) return 0; try { return new Date(d.replace(/(\d{2})-(\w{3})-(\d{2,4})/, (m,d,mo,y)=>{ const months={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11}; return (y.length===2?'20'+y:y)+'-'+(months[mo.toLowerCase()]+1).toString().padStart(2,'0')+'-'+d; })).getTime(); } catch(e){ return 0; }};
-    return parseDate(b.date) - parseDate(a.date);
-  });
+  const parseSortDate = d => {
+    if (!d) return 0;
+    if (/^\d{5}$/.test(String(d).trim())) return parseInt(d);
+    try {
+      return new Date(d.replace(/(\d{2})-(\w{3})-(\d{2,4})/, (m,dy,mo,y) => {
+        const months={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+        return (y.length===2?'20'+y:y)+'-'+(months[mo.toLowerCase()]+1).toString().padStart(2,'0')+'-'+dy;
+      })).getTime()/86400000;
+    } catch(e){ return 0; }
+  };
+  const sorted = [...INTENT].sort((a, b) => parseSortDate(b.date) - parseSortDate(a.date));
   const recent = sorted.slice(0, 5);
   el.innerHTML = recent.map(i => `
     <div class="intent-row">
@@ -1029,14 +1045,22 @@ function stBadge(s) {
 }
 function renderTasks(data) {
   document.getElementById('tc-label').textContent = data.length + ' tasks';
-  document.getElementById('tasks-body').innerHTML = data.map(t => `<tr>
-    <td class="strong" style="white-space:nowrap">${t.Name||'—'}</td>
-    <td class="dim" style="white-space:nowrap">${t.Project||'—'}</td>
-    <td class="strong">${t.Task||'—'}</td>
-    <td style="white-space:nowrap">${dueBadge(t['Due Date'], t.Status)}</td>
-    <td>${stBadge(t.Status)}</td>
-    <td class="note">${(t.Notes||'').substring(0,80)}</td>
-  </tr>`).join('') || '<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--muted)">No tasks found.</td></tr>';
+  const statusOptions = ['Not Started','In progress','Completed','Blocked'];
+  document.getElementById('tasks-body').innerHTML = data.map((t,idx) => {
+    const taskIdx = TASKS.indexOf(t);
+    return `<tr>
+      <td class="strong" style="white-space:nowrap">${t.Name||'—'}</td>
+      <td class="dim" style="white-space:nowrap">${t.Project||'—'}</td>
+      <td class="strong">${t.Task||'—'}</td>
+      <td style="white-space:nowrap">${dueBadge(t['Due Date'], t.Status)}</td>
+      <td>
+        <select onchange="updateTaskStatus(${taskIdx}, this.value)" style="font-size:12px;padding:3px 8px;border:1px solid var(--rule);border-radius:6px;background:var(--white);color:var(--ink);font-family:var(--sans);cursor:pointer">
+          ${statusOptions.map(s => `<option ${t.Status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td class="note">${(t.Notes||'').substring(0,80)}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--muted)">No tasks found.</td></tr>';
 }
 function filterTasks() {
   const ow = document.getElementById('t-owner').value.toLowerCase();
@@ -1052,9 +1076,11 @@ function filterTasks() {
 }
 function populateProjects() {
   const sel = document.getElementById('t-project');
+  const dl = document.getElementById('project-list');
   const existing = new Set([...sel.options].map(o => o.value));
   [...new Set(TASKS.map(t=>t.Project).filter(Boolean))].sort().forEach(p => {
     if (!existing.has(p)) { const o = document.createElement('option'); o.value=p; o.textContent=p; sel.appendChild(o); }
+    if (dl) { const d = document.createElement('option'); d.value=p; dl.appendChild(d); }
   });
 }
 
@@ -1064,47 +1090,77 @@ function renderLeads(data) {
   document.getElementById('leads-body').innerHTML = data.map(l => `<tr>
     <td class="dim">${l.n}</td>
     <td class="strong">${l.co}</td>
-    <td><span class="badge ${l.type==='Buy'?'b-buy':'b-sell'}">${l.type}</span></td>
+    <td><span class="badge ${l.type==='Buy'?'b-buy':l.type==='Sell'?'b-sell':'b-ns'}">${l.type||'—'}</span></td>
     <td class="dim" style="white-space:nowrap">${l.size||'—'}</td>
     <td><span class="badge ${l.status==='Open'?'b-open':l.status==='Closed'?'b-closed':'b-hold'}">${l.status}</span></td>
     <td class="dim" style="white-space:nowrap">${(l.lead||'—').substring(0,22)}</td>
     <td class="dim">${(l.contact||'—').substring(0,28)}</td>
+    <td class="dim" style="white-space:nowrap">${l.date||'—'}</td>
     <td class="note">${(l.next||'—').substring(0,80)}</td>
-  </tr>`).join('') || '<tr><td colspan="8" style="padding:20px;text-align:center;color:var(--muted)">No leads found.</td></tr>';
+  </tr>`).join('') || '<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--muted)">No leads found.</td></tr>';
 }
 function filterLeads() {
   const st = document.getElementById('l-status').value;
   const ty = document.getElementById('l-type').value;
   const ow = document.getElementById('l-owner').value.toLowerCase();
   const q = document.getElementById('l-search').value.toLowerCase();
-  renderLeads(LEADS.filter(l =>
+  const sort = document.getElementById('l-sort') ? document.getElementById('l-sort').value : 'recent';
+  let data = LEADS.filter(l =>
     (!st || l.status === st) &&
     (!ty || l.type === ty) &&
     (!ow || (l.lead||'').toLowerCase().includes(ow)) &&
     (!q || l.co.toLowerCase().includes(q) || (l.next||'').toLowerCase().includes(q))
-  ));
+  );
+  if (sort === 'recent') data = [...data].reverse();
+  else if (sort === 'az') data = [...data].sort((a,b) => a.co.localeCompare(b.co));
+  else if (sort === 'status') data = [...data].sort((a,b) => a.status.localeCompare(b.status));
+  renderLeads(data);
 }
 
 // ── INTENT TABLE ──
 function renderIntent(data) {
   document.getElementById('ic-label').textContent = data.length + ' signals';
+  function fmtDate(d) {
+    if (!d) return '—';
+    // Excel serial number
+    if (/^\d{5}$/.test(String(d).trim())) {
+      const dt = new Date(Date.UTC(1899,11,30) + parseInt(d)*86400000);
+      return dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+    }
+    return d;
+  }
   document.getElementById('intent-body').innerHTML = data.map(i => `<tr>
-    <td class="dim" style="white-space:nowrap">${i.date||'—'}</td>
+    <td class="dim" style="white-space:nowrap">${fmtDate(i.date)}</td>
     <td class="strong">${i.co}</td>
-    <td class="dim">${(i.sector||'—').substring(0,28)}</td>
+    <td class="dim">${(i.sector||'—').substring(0,30)}</td>
     <td class="dim" style="white-space:nowrap">${i.range||'—'}</td>
-    <td class="dim">${(i.source||'—').substring(0,24)}</td>
-    <td class="dim">${(i.contact||'—').substring(0,24)}</td>
-    <td class="note">${(i.intent||'—').substring(0,110)}</td>
+    <td class="dim">${(i.source||'—').substring(0,28)}</td>
+    <td class="dim">${(i.contact||'—').substring(0,28)}</td>
+    <td class="note">${(i.intent||'—').substring(0,140)}</td>
   </tr>`).join('') || '<tr><td colspan="7" style="padding:20px;text-align:center;color:var(--muted)">No signals found.</td></tr>';
 }
 function filterIntent() {
   const sec = document.getElementById('i-sector').value;
   const q = document.getElementById('i-search').value.toLowerCase();
-  renderIntent(INTENT.filter(i =>
+  const sort = document.getElementById('i-sort') ? document.getElementById('i-sort').value : 'newest';
+  let data = INTENT.filter(i =>
     (!sec || i.sector === sec) &&
     (!q || i.co.toLowerCase().includes(q) || (i.intent||'').toLowerCase().includes(q) || (i.sector||'').toLowerCase().includes(q))
-  ));
+  );
+  if (sort === 'newest') data = [...data].sort((a,b) => parseSortDate(b.date) - parseSortDate(a.date));
+  else if (sort === 'oldest') data = [...data].sort((a,b) => parseSortDate(a.date) - parseSortDate(b.date));
+  else if (sort === 'az') data = [...data].sort((a,b) => a.co.localeCompare(b.co));
+  renderIntent(data);
+}
+function parseSortDate(d) {
+  if (!d) return 0;
+  if (/^\d{5}$/.test(String(d).trim())) return parseInt(d);
+  try {
+    return new Date(d.replace(/(\d{2})-(\w{3})-(\d{2,4})/, (m,dy,mo,y) => {
+      const months={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+      return (y.length===2?'20'+y:y)+'-'+(months[mo.toLowerCase()]+1).toString().padStart(2,'0')+'-'+dy;
+    })).getTime()/86400000;
+  } catch(e){ return 0; }
 }
 function populateIntentSectors() {
   const sel = document.getElementById('i-sector');
@@ -1364,6 +1420,26 @@ function submitModal() {
     document.getElementById('m-intent-intent').value = '';
   }
   closeModal();
+}
+
+
+function updateTaskStatus(idx, newStatus) {
+  if (idx < 0 || idx >= TASKS.length) return;
+  TASKS[idx].Status = newStatus;
+  updateStats();
+  renderUrgent();
+  // Write to Google Sheet - send full row
+  const t = TASKS[idx];
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST', mode: 'no-cors',
+    body: JSON.stringify({
+      Name: t.Name, Project: t.Project, Task: t.Task,
+      'Start Date': '', 'Due Date': t['Due Date']||'',
+      Status: newStatus, Notes: t.Notes||'',
+      Substage: '', Priority: '', Effort: '', Blocking: '', Tags: '',
+      _action: 'update', _taskName: t.Task
+    })
+  }).catch(e => console.warn('Status update error:', e));
 }
 
 // ── INIT ──
