@@ -359,6 +359,73 @@ td.note { color: var(--ink-3); font-size: 13px; max-width: 200px; line-height: 1
 .match-from { font-size: 13px; font-weight: 500; color: var(--ink); }
 .match-to { font-size: 12px; color: var(--ink-4); margin-top: 2px; }
 
+
+/* ── OVERVIEW REDESIGN ── */
+#view-overview { background: #fff !important; }
+
+.ov-hero {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 36px 36px 24px;
+  border-bottom: 1px solid var(--rule);
+  background: white;
+}
+.ov-greeting {
+  font-family: var(--serif); font-size: 32px; color: var(--ink);
+  letter-spacing: -0.5px; line-height: 1.1;
+}
+.ov-date { font-size: 13px; color: var(--ink-4); margin-top: 6px; }
+.ov-hero-actions { display: flex; gap: 8px; }
+.ov-add-btn {
+  padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 500;
+  cursor: pointer; font-family: var(--sans); transition: all 0.15s; border: none;
+}
+.ov-add-btn.primary { background: var(--ink); color: white; }
+.ov-add-btn.primary:hover { background: #2a2a2a; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+.ov-add-btn.secondary { background: white; color: var(--ink-2); border: 1px solid var(--rule); }
+.ov-add-btn.secondary:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-bg); }
+
+.ov-stats {
+  display: flex; align-items: center; padding: 20px 36px;
+  background: white; border-bottom: 1px solid var(--rule); gap: 0;
+}
+.ov-stat { flex: 1; text-align: center; padding: 4px 0; }
+.ov-stat-num {
+  font-family: var(--serif); font-size: 36px; color: var(--ink);
+  line-height: 1; letter-spacing: -1px;
+}
+.ov-stat-num.red { color: #c0392b; }
+.ov-stat-num.amber { color: #d68910; }
+.ov-stat-label { font-size: 11px; color: var(--ink-4); margin-top: 5px; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 500; }
+.ov-stat-div { width: 1px; height: 40px; background: var(--rule); flex-shrink: 0; }
+
+.ov-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  padding: 28px 36px; background: white; gap: 28px;
+}
+.ov-col { display: flex; flex-direction: column; }
+.ov-section-hdr {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+}
+.ov-section-title { font-size: 13px; font-weight: 600; color: var(--ink); letter-spacing: -0.1px; }
+.ov-see-all {
+  font-size: 12px; color: var(--gold); background: none; border: none;
+  cursor: pointer; font-family: var(--sans); font-weight: 500;
+  padding: 0; transition: opacity 0.15s;
+}
+.ov-see-all:hover { opacity: 0.7; }
+
+.ov-card {
+  background: white; border: 1px solid var(--rule); border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04);
+  transition: box-shadow 0.2s;
+}
+.ov-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 16px 40px rgba(0,0,0,0.06); }
+
+/* Make content background white */
+.content { background: white !important; }
+.view { background: white; }
+
 @media (max-width: 900px) {
   .sidebar { display: none; }
   .stats { grid-template-columns: repeat(2,1fr); }
@@ -701,7 +768,7 @@ const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-h3CRESg-c
 const ZEENATH_DRIVE_ID = 'b!1W9KBzwT2U-g11vQnhoF84K9CMzPESpOqfjVwD7KgA3ecz4fD4n2S6CKmviOs3to';
 const LEAD_ITEM_ID = '01EKQ5GGZFEQFY6O7MHBCKQHJIJXEO3MWR';
 const INTENT_ITEM_ID = '01EKQ5GG5B35RQBGD3AFB2R7GWI6CNKAB5';
-const TODAY = new Date('2026-06-27');
+const TODAY = new Date();
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQ2HmRzbLGyEud_MJaHU5K_ZXlZFJE34uG0_60db2sVwhNbaSIYagZz1_W2pfKbt5XFA/exec';
 
 const msalConfig = {
@@ -972,17 +1039,24 @@ function updateStats() {
 
 // ── URGENT ──
 function renderUrgent() {
-  const urgent = TASKS.filter(t => t.Status !== 'Completed' && (isOverdue(t['Due Date']) || isDueSoon(t['Due Date'])))
-    .sort((a,b) => new Date(a['Due Date']) - new Date(b['Due Date'])).slice(0, 8);
+  const overdue = TASKS.filter(t => t.Status !== 'Completed' && isOverdue(t['Due Date']));
+  const soon = TASKS.filter(t => t.Status !== 'Completed' && isDueSoon(t['Due Date']));
+  // Also show recently added tasks (last 3 with no due date or future)
+  const recent = TASKS.filter(t => t.Status !== 'Completed' && !isOverdue(t['Due Date'])).slice(-3).reverse();
+  const urgent = [...overdue, ...soon].sort((a,b) => new Date(a['Due Date']) - new Date(b['Due Date']));
+  // Combine: urgent first, then recent if we have room
+  const combined = [...new Map([...urgent, ...recent].map(t => [t.Task, t])).values()].slice(0, 8);
   const el = document.getElementById('urgent-box');
-  if (!urgent.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No overdue or upcoming tasks 🎉</div>'; return; }
-  el.innerHTML = urgent.map(t => {
-    const ov = isOverdue(t['Due Date']); const av = avClass(t.Name);
-    return `<div class="task-row ${ov?'ov':'soon'}">
+  if (!combined.length) { el.innerHTML = '<div style="padding:24px;text-align:center;color:var(--ink-4);font-size:14px">No urgent tasks right now 🎉</div>'; return; }
+  el.innerHTML = combined.map(t => {
+    const ov = isOverdue(t['Due Date']);
+    const isRecent = !ov && !isDueSoon(t['Due Date']);
+    const av = avClass(t.Name);
+    return `<div class="task-row ${ov?'ov':isDueSoon(t['Due Date'])?'soon':'ip'}">
       <div class="av ${av}">${(t.Name||'?')[0].toUpperCase()}</div>
-      <div>
+      <div style="flex:1">
         <div class="task-name">${t.Task}</div>
-        <div class="task-meta">${t.Name} · ${t.Project} · ${dueBadge(t['Due Date'], t.Status)}</div>
+        <div class="task-meta">${t.Name} · ${t.Project}${t['Due Date']?' · '+dueBadge(t['Due Date'], t.Status):isRecent?' · <span style="font-size:11px;color:var(--green);background:var(--green-bg);padding:1px 8px;border-radius:10px">New</span>':''}</div>
       </div>
     </div>`;
   }).join('');
@@ -1018,18 +1092,21 @@ function renderIntentPreview() {
 // ── LEAD PREVIEW ──
 function renderLeadPreview() {
   const el = document.getElementById('lead-preview');
-  // Priority: Open leads sorted by most recently added (highest n)
   const open = [...LEADS].filter(l => l.status === 'Open')
     .sort((a,b) => (parseInt(b.n)||0) - (parseInt(a.n)||0))
-    .slice(0, 8);
+    .slice(0, 6);
   el.innerHTML = open.map(l => {
     const av = avClass(l.lead);
     const typeClass = l.type === 'Buy' ? 'b-buy' : 'b-sell';
     return `<div class="task-row ip">
       <div class="av ${av}">${(l.lead||'?')[0].toUpperCase()}</div>
-      <div>
-        <div class="task-name">${l.co} <span class="badge ${typeClass}">${l.type}</span></div>
-        <div class="task-meta">${l.next||'—'} · ${l.lead} ${l.size?'· '+l.size:''}</div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="task-name">${l.co}</span>
+          <span class="badge ${typeClass}">${l.type}</span>
+          ${l.size?`<span style="font-size:11px;color:var(--ink-4)">${l.size}</span>`:''}
+        </div>
+        <div class="task-meta" style="margin-top:3px">${l.lead}${l.next?' · '+l.next.substring(0,60):''}</div>
       </div>
     </div>`;
   }).join('');
