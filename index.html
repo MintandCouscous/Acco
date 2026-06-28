@@ -2493,7 +2493,8 @@ Produce a structured daily M&A brief in JSON format. Return ONLY valid JSON, no 
       return;
     }
 
-    // Render the brief
+    // Store signals for lookup by ID
+    window._briefSignals = {};
     const typeColors = {
       'Acquirer': {bg:'#e8f5ee',color:'#1a6e4a'},
       'Target': {bg:'#f0e8ff',color:'#5a1a9e'},
@@ -2539,6 +2540,7 @@ Produce a structured daily M&A brief in JSON format. Return ONLY valid JSON, no 
       <div class="brief-section">
         <div class="brief-section-title" style="color:#e85a00;border-color:#ffe8cc">🎯 Matches our pipeline (${matchedSignals.length})</div>
         ${matchedSignals.map((s,i) => {
+          window._briefSignals['match-'+i] = s;
           const tc = typeColors[s.type]||typeColors['Sector Trend'];
           return `<div class="brief-item">
             <span class="brief-item-badge" style="background:${tc.bg};color:${tc.color}">${s.type}</span>
@@ -2559,6 +2561,7 @@ Produce a structured daily M&A brief in JSON format. Return ONLY valid JSON, no 
       <div class="brief-section">
         <div class="brief-section-title">Breaking today (${todaySignals.length})</div>
         ${todaySignals.map((s,i) => {
+          window._briefSignals['today-'+i] = s;
           const tc = typeColors[s.type]||typeColors['Sector Trend'];
           return `<div class="brief-item">
             <span class="brief-item-badge" style="background:${tc.bg};color:${tc.color}">${s.type}</span>
@@ -2578,6 +2581,7 @@ Produce a structured daily M&A brief in JSON format. Return ONLY valid JSON, no 
       <div class="brief-section">
         <div class="brief-section-title">Recent signals</div>
         ${[...yestSignals,...recentSignals].map((s,i) => {
+          window._briefSignals['rec-'+i] = s;
           const tc = typeColors[s.type]||typeColors['Sector Trend'];
           return `<div class="brief-item">
             <span class="brief-item-badge" style="background:${tc.bg};color:${tc.color}">${s.type}</span>
@@ -2626,6 +2630,12 @@ Produce a structured daily M&A brief in JSON format. Return ONLY valid JSON, no 
   btn.textContent = '⚡ Regenerate';
   btn.style.opacity = '1';
   btn.disabled = false;
+}
+
+function addBriefSignalById(id) {
+  const s = window._briefSignals && window._briefSignals[id];
+  if (!s) return;
+  addBriefSignal(id, s);
 }
 
 function addBriefSignal(id, s) {
