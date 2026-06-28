@@ -360,125 +360,171 @@ td.note { color: var(--ink-3); font-size: 13px; max-width: 200px; line-height: 1
 .match-to { font-size: 12px; color: var(--ink-4); margin-top: 2px; }
 
 
-/* ── OVERVIEW REDESIGN — VIBRANT ── */
-#view-overview { background: #fff !important; padding: 0 !important; }
-.content { background: #fff !important; }
-.view { background: #fff; }
+/* ── OVERVIEW — WATERCOLOR JUNGLE ── */
+#view-overview { background: white !important; padding: 0 !important; }
+.content { background: white !important; }
+.view { background: white; }
 
-/* HERO */
+/* HERO — lush gradient wash */
 .ov-hero {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 40px 40px 32px;
-  background: white;
-  border-bottom: 1px solid #f0ede8;
+  padding: 44px 44px 36px;
+  background: linear-gradient(135deg, #f0faf4 0%, #fdf8f0 50%, #f0f4fa 100%);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  position: relative; overflow: hidden;
+}
+.ov-hero::before {
+  content: '';
+  position: absolute; top: -60px; right: -60px;
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(26,110,74,0.08) 0%, transparent 70%);
+  border-radius: 50%; pointer-events: none;
+}
+.ov-hero::after {
+  content: '';
+  position: absolute; bottom: -40px; left: 30%;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(184,146,58,0.08) 0%, transparent 70%);
+  border-radius: 50%; pointer-events: none;
 }
 .ov-greeting {
-  font-family: var(--serif); font-size: 38px; color: #0a0a0a;
-  letter-spacing: -1px; line-height: 1;
+  font-family: var(--serif); font-size: 40px; color: #0a0a0a;
+  letter-spacing: -1.5px; line-height: 1; position: relative; z-index: 1;
 }
-.ov-date { font-size: 13px; color: #999; margin-top: 8px; letter-spacing: 0.02em; }
-.ov-hero-actions { display: flex; gap: 8px; align-items: center; }
+.ov-date { font-size: 13px; color: #888; margin-top: 8px; letter-spacing: 0.03em; position: relative; z-index: 1; }
+.ov-hero-actions { display: flex; gap: 8px; align-items: center; position: relative; z-index: 1; }
 .ov-add-btn {
-  padding: 10px 20px; border-radius: 100px; font-size: 13px; font-weight: 500;
-  cursor: pointer; font-family: var(--sans); transition: all 0.2s; border: none;
-  letter-spacing: -0.1px;
+  padding: 10px 22px; border-radius: 100px; font-size: 13px; font-weight: 500;
+  cursor: pointer; font-family: var(--sans); transition: all 0.2s cubic-bezier(0.4,0,0.2,1); border: none;
 }
 .ov-add-btn.primary {
-  background: #0a0a0a; color: white;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  background: #0a2a18; color: white;
+  box-shadow: 0 4px 16px rgba(10,42,24,0.25);
 }
-.ov-add-btn.primary:hover { background: #222; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
-.ov-add-btn.secondary { background: white; color: #555; border: 1.5px solid #e8e4dc; }
-.ov-add-btn.secondary:hover { border-color: var(--gold); color: var(--gold); }
+.ov-add-btn.primary:hover { background: #1a6e4a; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,110,74,0.3); }
+.ov-add-btn.secondary { background: rgba(255,255,255,0.7); color: #444; border: 1px solid rgba(0,0,0,0.1); backdrop-filter: blur(8px); }
+.ov-add-btn.secondary:hover { background: white; border-color: #1a6e4a; color: #1a6e4a; transform: translateY(-2px); }
 
-/* STAT STRIP */
+/* STAT STRIP — dark forest */
 .ov-stats {
   display: flex; align-items: stretch;
-  background: #0a0a0a;
-  overflow: hidden;
+  background: #0a2a18;
+  position: relative; overflow: hidden;
+}
+.ov-stats::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(26,110,74,0.4) 0%, transparent 60%);
+  pointer-events: none;
 }
 .ov-stat {
-  flex: 1; text-align: center; padding: 28px 16px;
-  position: relative; transition: all 0.2s; cursor: pointer;
+  flex: 1; text-align: center; padding: 30px 16px;
+  position: relative; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); cursor: pointer;
+  z-index: 1;
 }
-.ov-stat:hover { background: rgba(255,255,255,0.08); }
-.ov-stat:hover .ov-stat-num { transform: scale(1.05); display: block; }
+.ov-stat:hover { background: rgba(255,255,255,0.07); }
 .ov-stat:active { background: rgba(255,255,255,0.12); }
+.ov-stat::after {
+  content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 0; height: 2px; background: #4ade80;
+  transition: width 0.3s ease;
+}
+.ov-stat:hover::after { width: 50%; }
 .ov-stat-num {
-  font-family: var(--serif); font-size: 44px; color: white;
+  font-family: var(--serif); font-size: 48px; color: white;
   line-height: 1; letter-spacing: -2px; display: block;
-  transition: transform 0.2s;
+  transition: transform 0.2s; text-shadow: 0 2px 20px rgba(0,0,0,0.3);
 }
-.ov-stat-num.red { color: #ff6b6b; }
-.ov-stat-num.amber { color: var(--gold-2); }
-.ov-stat-num.green { color: #51cf66; }
+.ov-stat:hover .ov-stat-num { transform: scale(1.06) translateY(-2px); }
+.ov-stat-num.red { color: #ff8a80; }
+.ov-stat-num.amber { color: #ffd54f; }
 .ov-stat-label {
-  font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 8px;
-  text-transform: uppercase; letter-spacing: 0.12em; font-weight: 500; display: block;
+  font-size: 10px; color: rgba(255,255,255,0.45); margin-top: 10px;
+  text-transform: uppercase; letter-spacing: 0.14em; font-weight: 600; display: block;
 }
-.ov-stat-div { width: 1px; background: rgba(255,255,255,0.08); flex-shrink: 0; }
+.ov-stat-div { width: 1px; background: rgba(255,255,255,0.07); flex-shrink: 0; }
 
-/* GRID */
+/* 3-COL GRID */
 .ov-grid {
   display: grid; grid-template-columns: 1fr 1fr 1fr;
-  gap: 24px; padding: 32px 40px;
+  gap: 0; padding: 0;
   background: white;
 }
-.ov-col { display: flex; flex-direction: column; gap: 20px; }
+.ov-col { display: flex; flex-direction: column; padding: 28px; border-right: 1px solid #f0ede8; }
+.ov-col:last-child { border-right: none; }
+
 .ov-section-hdr {
-  display: flex; align-items: center; justify-content: space-between; margin-bottom: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
 }
 .ov-section-title {
-  font-size: 11px; font-weight: 600; color: #999;
-  text-transform: uppercase; letter-spacing: 0.1em;
+  font-size: 10px; font-weight: 700; color: #aaa;
+  text-transform: uppercase; letter-spacing: 0.14em;
 }
 .ov-see-all {
-  font-size: 11px; color: var(--gold); background: none; border: none;
+  font-size: 11px; color: #1a6e4a; background: none; border: none;
   cursor: pointer; font-family: var(--sans); font-weight: 600;
-  padding: 0; letter-spacing: 0.02em;
+  padding: 0; transition: all 0.15s; display: flex; align-items: center; gap: 2px;
 }
-.ov-see-all:hover { color: var(--gold-2); }
+.ov-see-all:hover { color: #0a2a18; transform: translateX(3px); }
 
+/* Floating cards */
 .ov-card {
-  background: white; border: 1.5px solid #f0ede8; border-radius: 14px;
-  overflow: hidden; transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  background: white; border: 1.5px solid #f0ede8; border-radius: 16px;
+  overflow: hidden; transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 0 0 0 rgba(26,110,74,0);
 }
 .ov-card:hover {
-  border-color: #e0dbd0;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.08);
-  transform: translateY(-2px);
+  border-color: rgba(26,110,74,0.2);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.08), 0 0 0 1px rgba(26,110,74,0.1);
+  transform: translateY(-4px);
 }
 
-/* Task rows inside ov-card */
+/* Task rows in overview */
 .ov-card .task-row {
-  padding: 12px 16px;
-  border-bottom: 1px solid #f5f2ec;
+  padding: 11px 16px; border-bottom: 1px solid #f5f2ec;
+  transition: all 0.15s; cursor: default;
 }
+.ov-card .task-row:hover { background: #f7faf8; padding-left: 20px; }
 .ov-card .task-row:last-child { border-bottom: none; }
-.ov-card .task-row.ov { border-left: 3px solid #ff6b6b; }
-.ov-card .task-row.soon { border-left: 3px solid #ffa94d; }
-.ov-card .task-row.ip { border-left: 3px solid var(--gold); }
-.ov-card .task-name { font-size: 13px; }
-.ov-card .task-meta { font-size: 11px; }
+.ov-card .task-row.ov { border-left: 3px solid #ff8a80; }
+.ov-card .task-row.soon { border-left: 3px solid #ffd54f; }
+.ov-card .task-row.ip { border-left: 3px solid #4ade80; }
+.ov-card .task-name { font-size: 13px; color: #0a0a0a; }
+.ov-card .task-meta { font-size: 11px; color: #999; }
 
-/* Intent rows inside ov-card */
+/* Intent rows */
 .ov-card .intent-row {
-  padding: 12px 16px;
-  border-bottom: 1px solid #f5f2ec;
+  padding: 12px 16px; border-bottom: 1px solid #f5f2ec;
+  transition: all 0.15s;
 }
+.ov-card .intent-row:hover { background: #f7faf8; padding-left: 20px; }
 .ov-card .intent-row:last-child { border-bottom: none; }
-.ov-card .intent-name { font-size: 13px; font-weight: 500; }
+.ov-card .intent-name { font-size: 13px; font-weight: 500; color: #0a0a0a; }
 .ov-card .intent-sub { font-size: 11px; color: #999; margin: 2px 0 6px; }
 
-@media (max-width: 900px) {
-  .sidebar { display: none; }
-  .stats { grid-template-columns: repeat(2,1fr); }
-  .two-col { grid-template-columns: 1fr; }
-  .people-grid { grid-template-columns: 1fr 1fr; }
-  .acco-wrap { grid-template-columns: 1fr; }
-  .acco-side { display: none; }
-}
+/* Lead rows in overview */
+.ov-card .task-row.ip { border-left: 3px solid #D4A84B; }
+.ov-card .task-row.ip:hover { border-left-color: #1a6e4a; }
+
+/* Sidebar tweaks for jungle feel */
+.nav-btn.active { background: #0a2a18 !important; }
+.nav-btn:hover { background: #f0faf4 !important; color: #0a2a18 !important; }
+
+/* Topbar clean */
+.topbar { background: white !important; border-bottom: 1px solid #f0ede8 !important; }
+.t-wordmark { color: #0a0a0a !important; }
+.t-subtitle { color: #aaa !important; }
+.live-pill { background: #f0faf4 !important; border-color: rgba(26,110,74,0.15) !important; color: #1a6e4a !important; }
+.live-dot { background: #4ade80 !important; box-shadow: 0 0 8px rgba(74,222,128,0.5) !important; }
+.topbar-btn { background: #f5f2eb !important; border-color: #e8e4dc !important; color: #333 !important; }
+.topbar-btn:hover { background: #0a2a18 !important; color: white !important; border-color: #0a2a18 !important; }
+.user-av { background: #0a2a18 !important; color: #4ade80 !important; }
+
+/* Due badges more vibrant */
+.due-ov { background: #fff0ee !important; color: #e53935 !important; border: 1px solid #ffcdd2; font-weight: 500; }
+.due-soon { background: #fffde7 !important; color: #f57f17 !important; border: 1px solid #fff9c4; font-weight: 500; }
+
 
 /* ── MICRO-INTERACTIONS ── */
 .nav-btn { transition: all 0.15s cubic-bezier(0.4,0,0.2,1); }
@@ -705,12 +751,12 @@ tr { transition: background 0.1s; }
             <span class="ov-stat-label">Open leads ↗</span>
           </div>
           <div class="ov-stat-div"></div>
-          <div class="ov-stat" onclick="show('intent', document.querySelector('[onclick*=\"intent\"]'))" title="View intent signals">
+          <div class="ov-stat" onclick="show('intent', document.querySelectorAll('.nav-btn')[3])" title="View intent signals">
             <span class="ov-stat-num" id="s-intent">—</span>
             <span class="ov-stat-label">Intent signals ↗</span>
           </div>
           <div class="ov-stat-div"></div>
-          <div class="ov-stat" onclick="show('tasks', document.querySelector('[onclick*=\"tasks\"]'))" title="View all tasks">
+          <div class="ov-stat" onclick="show('tasks', document.querySelectorAll('.nav-btn')[1])" title="View all tasks">
             <span class="ov-stat-num" id="s-tasks">—</span>
             <span class="ov-stat-label">Total tasks ↗</span>
           </div>
@@ -733,7 +779,7 @@ tr { transition: background 0.1s; }
           <div class="ov-col">
             <div class="ov-section-hdr">
               <span class="ov-section-title">Tasks — overdue & soon</span>
-              <button class="ov-see-all" onclick="show('tasks', document.querySelector('[onclick*=\"tasks\"]'))">See all →</button>
+              <button class="ov-see-all" onclick="show('tasks', document.querySelectorAll('.nav-btn')[1])">See all →</button>
             </div>
             <div class="ov-card" id="urgent-box"><div class="data-loading"><div class="spin"></div>Loading...</div></div>
           </div>
@@ -742,7 +788,7 @@ tr { transition: background 0.1s; }
           <div class="ov-col">
             <div class="ov-section-hdr">
               <span class="ov-section-title">Latest intent signals</span>
-              <button class="ov-see-all" onclick="show('intent', document.querySelector('[onclick*=\"intent\"]'))">See all →</button>
+              <button class="ov-see-all" onclick="show('intent', document.querySelectorAll('.nav-btn')[3])">See all →</button>
             </div>
             <div class="ov-card" id="intent-preview"></div>
           </div>
@@ -751,7 +797,7 @@ tr { transition: background 0.1s; }
           <div class="ov-col">
             <div class="ov-section-hdr">
               <span class="ov-section-title">Priority leads</span>
-              <button class="ov-see-all" onclick="show('leads', document.querySelector('[onclick*=\"leads\"]'))">See all →</button>
+              <button class="ov-see-all" onclick="show('leads', document.querySelectorAll('.nav-btn')[2])">See all →</button>
             </div>
             <div class="ov-card" id="lead-preview"></div>
           </div>
