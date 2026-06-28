@@ -1141,9 +1141,10 @@ function onSignedIn(account) {
   document.getElementById('user-av').textContent = initials;
   document.getElementById('user-name').textContent = name.split(' ')[0];
   const hour = new Date().getHours();
-  const timeGreet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const timeGreet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : hour < 21 ? 'Good evening' : 'Good night';
   const firstName = (account.name || account.username || '').split(' ')[0];
   document.getElementById('greeting-name').textContent = timeGreet + ', ' + firstName;
+  applyTimeTheme(hour);
   document.getElementById('today-str').textContent = TODAY.toLocaleDateString('en-IN', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
   loadAll();
 }
@@ -1952,6 +1953,166 @@ function updateTaskStatus(idx, newStatus) {
     })
   }).catch(e => console.warn('Status update error:', e));
 }
+
+
+// ── TIME-AWARE THEME ──
+function applyTimeTheme(hour) {
+  const root = document.documentElement;
+  const hero = document.querySelector('.hero');
+  const canvasSvg = document.querySelector('.canopy-svg');
+  const strip = document.querySelector('.strip');
+
+  if (hour >= 5 && hour < 12) {
+    // ── MORNING: golden sunrise, dewy, fresh ──
+    if (hero) hero.style.background = 'linear-gradient(160deg, #fffbf0 0%, #fef9e8 30%, #f0faf5 70%, #e8f8ff 100%)';
+    updateCanopy('morning');
+    if (strip) { strip.style.background = 'linear-gradient(135deg, #1a3a0a 0%, #2d5a1a 50%, #1a3a0a 100%)'; }
+    injectMoodBar('morning');
+  } else if (hour >= 12 && hour < 17) {
+    // ── AFTERNOON: bright, white light, sharp ──
+    if (hero) hero.style.background = 'linear-gradient(160deg, #f8fff8 0%, #fffff0 40%, #f0f8ff 100%)';
+    updateCanopy('afternoon');
+    if (strip) { strip.style.background = 'linear-gradient(135deg, #0a2a18 0%, #1a4a2a 100%)'; }
+    injectMoodBar('afternoon');
+  } else if (hour >= 17 && hour < 21) {
+    // ── EVENING: sunset, amber, coral, violet ──
+    if (hero) hero.style.background = 'linear-gradient(160deg, #fff5e8 0%, #ffe8d6 30%, #ffecd2 50%, #f8e8ff 100%)';
+    updateCanopy('evening');
+    if (strip) { strip.style.background = 'linear-gradient(135deg, #2a0a1a 0%, #4a1a0a 40%, #3a1a2a 100%)'; }
+    injectMoodBar('evening');
+  } else {
+    // ── NIGHT: deep, moody, silver ──
+    if (hero) hero.style.background = 'linear-gradient(160deg, #0a0a1a 0%, #0f0f2a 50%, #1a0a2a 100%)';
+    updateCanopy('night');
+    if (strip) { strip.style.background = 'linear-gradient(135deg, #05050f 0%, #0a0a1a 100%)'; }
+    document.querySelector('.hero-greeting') && (document.querySelector('.hero-greeting').style.color = '#e8e8ff');
+    document.querySelector('.hero-date') && (document.querySelector('.hero-date').style.color = '#6060aa');
+    injectMoodBar('night');
+  }
+}
+
+function updateCanopy(time) {
+  const svg = document.querySelector('.canopy-svg');
+  if (!svg) return;
+  // Update the glow radial gradient color based on time
+  const glow = svg.querySelector('#glow1 stop');
+  const sun = svg.querySelector('#sun stop');
+  if (time === 'morning') {
+    if (glow) glow.setAttribute('stop-color', '#ffd700');
+    if (sun) { sun.setAttribute('stop-color', '#fff8dc'); sun.setAttribute('stop-opacity', '0.8'); }
+    // Make fireflies golden morning
+    svg.querySelectorAll('circle').forEach((c,i) => {
+      c.setAttribute('fill', i%2===0 ? '#ffd700' : '#4ade80');
+    });
+  } else if (time === 'evening') {
+    if (glow) { glow.setAttribute('stop-color', '#ff6b35'); glow.setAttribute('stop-opacity', '0.15'); }
+    if (sun) { sun.setAttribute('stop-color', '#ff9a56'); sun.setAttribute('stop-opacity', '0.5'); }
+    // Sunset colors on trees
+    svg.querySelectorAll('ellipse').forEach((e,i) => {
+      if (i > 3) {
+        const colors = ['#3d1a0a','#5a2a0a','#4a1a1a','#2a0a3a'];
+        e.setAttribute('fill', colors[i%4]);
+      }
+    });
+    svg.querySelectorAll('circle').forEach((c,i) => {
+      c.setAttribute('fill', i%2===0 ? '#ff6b35' : '#ff9a56');
+      c.setAttribute('opacity', '0.7');
+    });
+  } else if (time === 'night') {
+    if (glow) { glow.setAttribute('stop-color', '#4040aa'); glow.setAttribute('stop-opacity', '0.2'); }
+    svg.querySelectorAll('ellipse').forEach(e => {
+      e.setAttribute('fill', '#0a0a2a');
+      e.setAttribute('opacity', '0.6');
+    });
+    svg.querySelectorAll('circle').forEach(c => {
+      c.setAttribute('fill', '#c8c8ff');
+      c.setAttribute('opacity', '0.8');
+    });
+  }
+}
+
+const QUOTES = {
+  morning: [
+    "The deals that change everything start with the first call. Make it today.",
+    "Every great mandate was once just a cold outreach. What will today's be?",
+    "Markets reward the prepared. You're already here — that's the edge.",
+    "The best time to close a deal was yesterday. The second best time is today.",
+    "Vision without execution is hallucination. Let's execute.",
+  ],
+  afternoon: [
+    "Momentum is everything in M&A. Keep it moving.",
+    "Every follow-up you make today is a future deal you're building.",
+    "The difference between a good banker and a great one: one more call.",
+    "Mid-day check: are your most important tasks done, or just your easiest ones?",
+    "Deals don't close themselves. What's the next move?",
+  ],
+  evening: [
+    "The work you do in the evenings separates the serious from the rest.",
+    "Another day of building something real. That counts.",
+    "The mandates you're working on today will close. Stay the course.",
+    "Great firms aren't built in a day. But they're built in days like this one.",
+    "Reflect. Refine. Come back stronger tomorrow.",
+  ],
+  night: [
+    "The best bankers aren't the ones who sleep the most — but rest well tonight.",
+    "What you planned today is tomorrow's momentum.",
+    "The market never stops. Neither do you. But recharge tonight.",
+    "Every late night is an investment in something that matters.",
+    "Rest is not the enemy of ambition. It's the fuel.",
+  ]
+};
+
+function injectMoodBar(time) {
+  // Remove existing mood bar
+  const existing = document.getElementById('mood-bar');
+  if (existing) existing.remove();
+
+  const quotes = QUOTES[time];
+  const quote = quotes[Math.floor(Math.random() * quotes.length)];
+
+  const colors = {
+    morning: { bg: 'linear-gradient(135deg, #fff8dc, #fffaed)', border: '#ffd700', text: '#5a3a00', icon: '🌅' },
+    afternoon: { bg: 'linear-gradient(135deg, #f0fff8, #f8fff0)', border: '#4ade80', text: '#1a4a2a', icon: '☀️' },
+    evening: { bg: 'linear-gradient(135deg, #fff5e8, #ffe8f0)', border: '#ff9a56', text: '#5a2a0a', icon: '🌅' },
+    night: { bg: 'linear-gradient(135deg, #f0f0ff, #e8e8ff)', border: '#8080cc', text: '#1a1a4a', icon: '🌙' }
+  };
+  const c = colors[time];
+
+  const bar = document.createElement('div');
+  bar.id = 'mood-bar';
+  bar.style.cssText = `
+    background: ${c.bg};
+    border-top: 2px solid ${c.border};
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    padding: 12px 44px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: ${c.text};
+    font-style: italic;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    position: relative;
+    overflow: hidden;
+  `;
+  bar.innerHTML = `
+    <span style="font-size:18px;font-style:normal">${c.icon}</span>
+    <span style="flex:1">"${quote}"</span>
+    <span style="font-style:normal;font-size:11px;opacity:0.5;cursor:pointer;padding:4px 8px;border-radius:20px;background:rgba(0,0,0,0.05)" onclick="refreshQuote('${time}')">new quote</span>
+  `;
+
+  // Insert after strip, before ov-3col
+  const strip = document.querySelector('.strip');
+  if (strip && strip.nextSibling) {
+    strip.parentNode.insertBefore(bar, strip.nextSibling);
+  }
+}
+
+function refreshQuote(time) {
+  injectMoodBar(time);
+}
+
 
 // ── INIT ──
 checkExistingSession();
