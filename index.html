@@ -643,6 +643,39 @@ tr { transition: background 0.1s; }
 ::-webkit-scrollbar-thumb { background: #e0dbd0; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #c8c3b8; }
 
+
+/* Scan button */
+.hero-btn.scan {
+  background: linear-gradient(135deg, #1a6e4a, #0a2a18);
+  color: #4ade80;
+  border: 1.5px solid rgba(74,222,128,0.3);
+  box-shadow: 0 4px 20px rgba(26,110,74,0.3);
+  position: relative; overflow: hidden;
+}
+.hero-btn.scan:hover { box-shadow: 0 8px 30px rgba(26,110,74,0.5); transform: translateY(-2px) scale(1.02); }
+.hero-btn.scan.scanning { animation: scanPulse 1.5s infinite; }
+@keyframes scanPulse { 0%,100%{box-shadow:0 4px 20px rgba(74,222,128,0.3)} 50%{box-shadow:0 4px 40px rgba(74,222,128,0.7)} }
+
+/* Intel bar */
+.intel-card {
+  background: white; border: 1.5px solid #f0ede8; border-radius: 14px;
+  padding: 16px 20px; transition: all 0.2s; cursor: pointer;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.intel-card:hover { border-color: rgba(26,110,74,0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.08); transform: translateY(-2px); }
+.intel-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.intel-card-co { font-size: 14px; font-weight: 700; color: #0a0a0a; }
+.intel-card-sector { font-size: 11px; color: #1a6e4a; font-weight: 600; padding: 2px 8px; background: #e8f5ee; border-radius: 20px; white-space: nowrap; }
+.intel-card-intent { font-size: 12px; color: #555; line-height: 1.5; }
+.intel-card-footer { display: flex; align-items: center; justify-content: space-between; }
+.intel-card-source { font-size: 10px; color: #aaa; font-weight: 500; }
+.intel-add-btn { font-size: 11px; font-weight: 700; color: white; background: #0a2a18; border: none; border-radius: 20px; padding: 4px 12px; cursor: pointer; transition: all 0.15s; }
+.intel-add-btn:hover { background: #1a6e4a; }
+.intel-add-btn.added { background: #1a6e4a; color: #4ade80; }
+.intel-scanning { display: flex; align-items: center; gap: 12px; padding: 20px; color: #1a6e4a; font-size: 14px; font-weight: 500; }
+.intel-title { font-size: 11px; font-weight: 800; color: #aaa; text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.intel-title span { width: 8px; height: 8px; background: #4ade80; border-radius: 50%; box-shadow: 0 0 8px rgba(74,222,128,0.6); display: inline-block; animation: pulse 2s infinite; }
+
 </style>
 </head>
 <body>
@@ -804,6 +837,7 @@ tr { transition: background 0.1s; }
               <button class="hero-btn ghost" onclick="openModal('intent')">+ Signal</button>
               <button class="hero-btn ghost" onclick="openModal('lead')">+ Lead</button>
               <button class="hero-btn solid" onclick="openModal('task')">+ Task</button>
+              <button class="hero-btn scan" onclick="scanNewsForSignals()" id="scan-btn">⚡ Scan news</button>
             </div>
           </div>
         </div>
@@ -834,6 +868,11 @@ tr { transition: background 0.1s; }
             <div class="strip-num amber" id="s-ip">—</div>
             <div class="strip-label">In progress ↗</div>
           </div>
+        </div>
+
+        <!-- ── LIVE INTELLIGENCE ── -->
+        <div id="live-intel-bar" style="display:none;padding:0 28px 20px;background:white">
+          <div id="live-intel-inner"></div>
         </div>
 
         <!-- ── THREE COLUMNS ── -->
@@ -2113,6 +2152,144 @@ function refreshQuote(time) {
   injectMoodBar(time);
 }
 
+
+
+// ── NEWS SCANNER ──
+async function scanNewsForSignals() {
+  const btn = document.getElementById('scan-btn');
+  const bar = document.getElementById('live-intel-bar');
+  const inner = document.getElementById('live-intel-inner');
+
+  btn.textContent = '⚡ Scanning...';
+  btn.classList.add('scanning');
+  bar.style.display = 'block';
+  inner.innerHTML = '<div class="intel-scanning"><div class="spin"></div>Scanning Economic Times, Mint, Business Standard, investor announcements...</div>';
+
+  // Build context of existing intent signals to avoid duplicates
+  const existingCos = INTENT.map(i => i.co).join(', ');
+  const existingLeads = LEADS.map(l => l.co).join(', ');
+
+  const prompt = `You are scanning Indian financial news to find fresh M&A intent signals for Accomplir Advisors, a Mumbai-based boutique M&A investment bank.
+
+EXISTING SIGNALS (do not repeat these): ${existingCos.substring(0,500)}
+EXISTING LEADS (match against these): ${existingLeads.substring(0,500)}
+
+Search for the LATEST news (last 30 days) from Economic Times, Mint, Business Standard, VCCircle, Moneycontrol about:
+1. Indian companies announcing M&A intent, acquisitions, or looking to acquire
+2. PE/VC firms announcing new investment mandates or sector focus
+3. Companies raising funding for acquisitions or expansion
+4. Hospital groups, hotel chains, industrials, FMCG, fintech companies looking to buy or sell
+5. Any investor reachouts or analyst calls where acquisition intent is mentioned
+
+For each signal found, respond ONLY with a JSON array (no markdown, no explanation):
+[
+  {
+    "company": "Company name",
+    "sector": "Sector",
+    "intent": "What they are looking to acquire/invest in - be specific",
+    "range": "Deal size if mentioned",
+    "source": "ET/Mint/BS/VCCircle",
+    "contact": "",
+    "date": "Today's date",
+    "match": "Name of our existing lead or intent signal this matches, or empty string"
+  }
+]
+
+Return 6-8 signals. Only return the JSON array, nothing else.`;
+
+  try {
+    const r = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        system: 'You are a financial news scanner. Always search the web before responding. Return only valid JSON array.',
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const d = await r.json();
+
+    // Extract text from response (may have tool use blocks)
+    let text = '';
+    if (d.content) {
+      for (const block of d.content) {
+        if (block.type === 'text') text += block.text;
+      }
+    }
+
+    // Parse JSON
+    let signals = [];
+    try {
+      const match = text.match(/\[[\s\S]*\]/);
+      if (match) signals = JSON.parse(match[0]);
+    } catch(e) {
+      console.warn('Parse error:', e, text.substring(0,200));
+    }
+
+    if (!signals.length) {
+      inner.innerHTML = '<div style="padding:20px;color:#aaa;font-size:13px">No new signals found right now. Try again in a few hours.</div>';
+      btn.textContent = '⚡ Scan news';
+      btn.classList.remove('scanning');
+      return;
+    }
+
+    // Render signals
+    const today = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).replace(/ /g,'-');
+    inner.innerHTML = `
+      <div class="intel-title"><span></span>Fresh signals from the news — ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        ${signals.map((s,idx) => `
+          <div class="intel-card" id="icard-${idx}">
+            <div class="intel-card-header">
+              <div class="intel-card-co">${s.company||'Unknown'}</div>
+              <div class="intel-card-sector">${(s.sector||'').substring(0,20)}</div>
+            </div>
+            <div class="intel-card-intent">${s.intent||''}</div>
+            ${s.match ? `<div style="font-size:11px;color:#1a6e4a;font-weight:600">🔗 Matches: ${s.match}</div>` : ''}
+            <div class="intel-card-footer">
+              <div class="intel-card-source">${s.source||'News'} · ${s.range||'size TBD'}</div>
+              <button class="intel-add-btn" id="iadd-${idx}" onclick="addNewsSignal(${idx}, ${JSON.stringify(s).replace(/"/g,'&quot;')})">+ Add signal</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+  } catch(e) {
+    inner.innerHTML = '<div style="padding:20px;color:#e53935;font-size:13px">Scan failed — check connection and try again.</div>';
+    console.error('Scan error:', e);
+  }
+
+  btn.textContent = '⚡ Scan news';
+  btn.classList.remove('scanning');
+}
+
+function addNewsSignal(idx, s) {
+  const today = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
+  const signal = {
+    date: today,
+    co: s.company||'',
+    sector: s.sector||'',
+    range: s.range||'',
+    source: s.source||'News scan',
+    contact: s.contact||'',
+    intent: s.intent||''
+  };
+  INTENT.unshift(signal);
+  renderIntent(INTENT);
+  renderIntentPreview();
+  document.getElementById('nc-intent').textContent = INTENT.length;
+  document.getElementById('s-intent').textContent = INTENT.filter(i=>i.co).length;
+  writeIntentToOneDrive({ company: signal.co, date: signal.date, sector: signal.sector, range: signal.range, source: signal.source, contact: signal.contact, intent: signal.intent });
+
+  // Mark as added
+  const btn = document.getElementById('iadd-' + idx);
+  const card = document.getElementById('icard-' + idx);
+  if (btn) { btn.textContent = '✓ Added'; btn.classList.add('added'); btn.disabled = true; }
+  if (card) { card.style.borderColor = 'rgba(26,110,74,0.4)'; card.style.background = '#f7fdf9'; }
+}
 
 // ── INIT ──
 checkExistingSession();
