@@ -1447,8 +1447,9 @@ function dueBadge(due, status) {
   return `<span style="font-size:12px;color:var(--text-3)">${due}</span>`;
 }
 function avClass(name) {
-  const n = (name||'')[0].toUpperCase();
-  return ['Z','A','R','Y','L','N'].includes(n) ? `av-${n}` : 'av-x';
+  if (!name) return 'av-x';
+  const n = String(name)[0].toUpperCase();
+  return ['Z','A','R','Y','L','N','D'].includes(n) ? 'av-' + n : 'av-x';
 }
 
 // ── STATS ──
@@ -2247,7 +2248,9 @@ async function scanNewsForSignals() {
     // ── STEP 1: Fetch RSS headlines (free, via our proxy) ──
     const rssResp = await fetch('/api/rss');
     if (!rssResp.ok) throw new Error('RSS fetch failed: ' + rssResp.status);
-    const rssData = await rssResp.json();
+    const rssText2 = await rssResp.text();
+    let rssData;
+    try { rssData = JSON.parse(rssText2); } catch(e) { throw new Error('RSS parse failed'); }
     const articles = rssData.articles || [];
 
     if (!articles.length) {
@@ -2417,7 +2420,10 @@ async function generateBrief() {
   try {
     // Step 1: Fetch RSS
     const rssResp = await fetch('/api/rss');
-    const rssData = await rssResp.json();
+    if (!rssResp.ok) throw new Error('RSS fetch failed: ' + rssResp.status);
+    const rssText = await rssResp.text();
+    let rssData;
+    try { rssData = JSON.parse(rssText); } catch(e) { throw new Error('RSS parse failed: ' + rssText.substring(0,100)); }
     const articles = rssData.articles || [];
 
     content.innerHTML = '<div style="padding:40px;display:flex;align-items:center;gap:12px;color:#1a6e4a;font-size:14px;font-weight:500"><div class="spin"></div>Analysing ' + articles.length + ' headlines...</div>';
