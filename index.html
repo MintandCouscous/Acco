@@ -2658,34 +2658,39 @@ Produce a structured daily M&A brief in JSON format. Return ONLY valid JSON, no 
 
     let brief;
     try {
-      // Try to extract and parse JSON
-      let jsonStr = text;
-      // Strip markdown code fences if present
-      jsonStr = jsonStr.replace(/```json\s*/g, '').replace(/```\s*/g, '');
-      // Find the JSON object
-      const jsonMatch = jsonStr.match(/{[\s\S]*}/);
-      if (jsonMatch) {
+      let raw = text;
+      // Remove markdown fences
+      raw = raw.replace(/```[a-z]*/g, '').replace(/```/g, '').trim();
+      // Find outermost JSON object
+      const start = raw.indexOf('{');
+      const end = raw.lastIndexOf('}');
+      if (start >= 0 && end > start) {
+        let jsonStr = raw.substring(start, end + 1);
         try {
-          brief = JSON.parse(jsonMatch[0]);
+          brief = JSON.parse(jsonStr);
         } catch(e1) {
-          // Try fixing trailing commas
-          const fixed = jsonMatch[0].replace(/,(\s*[}\]])/g, '$1');
-          brief = JSON.parse(fixed);
+          // Aggressive cleanup: fix common model JSON mistakes
+          jsonStr = jsonStr.replace(/,\s*([}\]])/g, '$1'); // trailing commas
+          try {
+            brief = JSON.parse(jsonStr);
+          } catch(e2) {
+            // Last resort: build minimal brief from raw text
+            console.warn('JSON parse failed, building from raw text');
+            brief = {
+              executive_summary: raw.substring(0, 800).replace(/[{}"]/g, ''),
+              deal_count: 0,
+              sectors_active: [],
+              signals: [],
+              sector_trends: [],
+              ones_to_watch: ''
+            };
+          }
         }
       }
     } catch(e) {
-      console.warn('Brief parse error:', e.message, '\nRaw response:', text.substring(0,500));
-      // Fallback: show raw text as plain brief
-      content.innerHTML = `
-        <div class="brief-summary">
-          <strong style="color:#1a6e4a;font-size:11px;text-transform:uppercase;letter-spacing:0.1em">Intelligence Summary</strong>
-          <div style="margin-top:12px;font-size:14px;line-height:1.8;white-space:pre-wrap">${text.substring(0,2000)}</div>
-        </div>
-        <div style="margin-top:16px;font-size:12px;color:#aaa">Could not parse structured format — showing raw response. <button onclick="generateBrief()" style="color:#1a6e4a;background:none;border:none;cursor:pointer;font-weight:600">Regenerate</button></div>
-      `;
-      btn.textContent = '⚡ Regenerate'; btn.style.opacity = '1'; btn.disabled = false;
-      return;
+      console.warn('Parse outer error:', e);
     }
+
 
 
     if (!brief) {
