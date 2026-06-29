@@ -1758,7 +1758,7 @@ async function send() {
   const intentCtx = INTENT.slice(0,50).map(function(i) { return i.date+'|'+i.co+'|'+i.sector+'|'+i.range+'|'+i.source+'|'+i.contact+'|'+i.intent.substring(0,120); }).join('\n');
   const taskCtx = TASKS.map(function(t) { return t.Name+'|'+t.Project+'|'+t.Task+'|due:'+(t['Due Date']||'none')+'|'+(t.Status||'no status'); }).join('\n');
 
-  const sys = 'You are Acco, the M&A deal assistant for Accomplir Advisors. Today is 27 June 2026.\n\n'
+  const sys = 'You are Acco, the M&A deal assistant for Accomplir Advisors. Today is ' + new Date().toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}) + '.\n\n'
     + 'LEADS (' + LEADS.length + '):\n' + leadCtx + '\n\n'
     + 'INTENT (' + INTENT.length + '):\n' + intentCtx + '\n\n'
     + 'TASKS (' + TASKS.length + '):\n' + taskCtx + '\n\n'
@@ -2434,46 +2434,11 @@ async function generateBrief() {
       `[${i+1}] ${a.source} | ${new Date(a.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})} | ${a.title}${a.description?' — '+a.description.substring(0,150):''}`
     ).join('\n');
 
-    const prompt = `You are producing the daily M&A intelligence brief for Accomplir Advisors, a Mumbai boutique M&A bank. Today is ${today.toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}.
-
-You have ${articles.length} fresh headlines from ET, Mint, Business Standard, VCCircle, Inc42, Reuters.
-
-YOUR JOB: Produce a COMPREHENSIVE market-wide Indian M&A brief. Scan the ENTIRE Indian M&A landscape — every sector, every deal, every investor. Do NOT limit yourself to just our pipeline.
-
-OUR PIPELINE (for matching only):
-Leads: ${existingLeads.substring(0,400)}
-Existing signals: ${existingSignals.substring(0,200)}
-
-HEADLINES:
-${headlineText}
-
-Extract ALL of: acquisitions announced, PE/VC deployments, fundraises for M&A, sector consolidation, cross-border deals, companies in talks to buy. For each, check if it matches our pipeline.
-
-Return ONLY this JSON, no markdown:
-{
-  "executive_summary": "4-5 sentences on the dominant Indian M&A themes today. Name specific companies and deals. What does this mean for a boutique IB firm?",
-  "deal_count": <number>,
-  "sectors_active": ["sector1","sector2","sector3","sector4","sector5"],
-  "signals": [
-    {
-      "company": "Company name",
-      "sector": "Sector",
-      "type": "Acquirer/Target/Fundraise/PE Deploy/Sector Trend/Cross-border",
-      "headline": "One crisp line",
-      "detail": "3-4 sentences — deal size, rationale, what it signals",
-      "source": "Publication",
-      "range": "Deal size",
-      "age": "today/yesterday/recent",
-      "match": "Our lead or signal this matches, or empty",
-      "action": "One sharp actionable sentence for Accomplir"
-    }
-  ],
-  "sector_trends": [
-    { "sector": "Sector", "trend": "3 sentences — what is happening and what deals it creates" }
-  ],
-  "ones_to_watch": "3-4 specific companies to monitor this week with brief explanation"
-}`
-
+    const prompt = 'You are producing the daily M&A intelligence brief for Accomplir Advisors, a Mumbai boutique M&A bank. Today is ' + today.toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}) + '. You have ' + articles.length + ' fresh headlines.\n\n'
+      + 'OUR PIPELINE: ' + existingLeads.substring(0,300) + '\n\n'
+      + 'HEADLINES:\n' + headlineText + '\n\n'
+      + 'Extract ALL M&A signals: acquisitions, PE deployments, fundraises, sector consolidation, cross-border deals. Check if each matches our pipeline.\n\n'
+      + 'Return ONLY this JSON (no markdown, start with {, end with }): {"executive_summary":"4 sentences on dominant Indian M&A themes today, name specific deals","deal_count":0,"sectors_active":["s1","s2"],"signals":[{"company":"Name","sector":"Sector","type":"Acquirer","headline":"One line","detail":"2-3 sentences on deal and what it means","source":"ET","range":"Xcr","age":"today","match":"our lead name or empty","action":"next step for Accomplir"}],"sector_trends":[{"sector":"Sector","trend":"2 sentences"}],"ones_to_watch":"2-3 companies to monitor this week"}';
     const r = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2647,7 +2612,7 @@ Produce a structured daily M&A brief in JSON format. Return ONLY valid JSON, no 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 3000,
+        max_tokens: 4000,
         system: 'You are a senior M&A analyst. You MUST return ONLY a raw JSON object. No markdown fences, no backticks, no explanation before or after. Start your response with { and end with }. All string values must be under 150 characters. Escape any quotes inside strings.',
         messages: [{ role: 'user', content: prompt }]
       })
