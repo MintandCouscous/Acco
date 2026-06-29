@@ -2482,22 +2482,10 @@ Produce a structured daily M&A brief in JSON format. Return ONLY valid JSON, no 
 
     let brief;
     try {
-      // Try direct parse first
-      const match = text.match(/\{[\s\S]*\}/);
-      if (match) {
-        try {
-          brief = JSON.parse(match[0]);
-        } catch(e1) {
-          // Try cleaning common JSON issues
-          const cleaned = match[0]
-            .replace(/[ -]/g, ' ') // control chars
-            .replace(/,\s*}/g, '}')            // trailing commas
-            .replace(/,\s*]/g, ']');
-          brief = JSON.parse(cleaned);
-        }
-      }
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) brief = JSON.parse(jsonMatch[0]);
     } catch(e) {
-      console.warn('Brief parse error:', e, 'Raw:', text.substring(0,300));
+      console.warn('Brief parse error:', e, text.substring(0,200));
       content.innerHTML = `<div style="padding:40px;color:#e53935;font-size:14px">
         <strong>Brief generation failed.</strong><br><br>
         The AI response couldn't be parsed. This sometimes happens when headlines contain unusual characters.
