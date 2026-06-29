@@ -2436,6 +2436,176 @@ async function generateBrief() {
 
     const prompt = `You are producing the daily M&A intelligence brief for Accomplir Advisors, a Mumbai boutique M&A bank. Today is ${today.toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}.
 
+You have ${articles.length} fresh headlines from ET, Mint, Business Standard, VCCircle, Inc42, Reuters.
+
+YOUR JOB: Produce a COMPREHENSIVE market-wide Indian M&A brief. Scan the ENTIRE Indian M&A landscape — every sector, every deal, every investor. Do NOT limit yourself to just our pipeline.
+
+OUR PIPELINE (for matching only):
+Leads: ${existingLeads.substring(0,400)}
+Existing signals: ${existingSignals.substring(0,200)}
+
+HEADLINES:
+${headlineText}
+
+Extract ALL of: acquisitions announced, PE/VC deployments, fundraises for M&A, sector consolidation, cross-border deals, companies in talks to buy. For each, check if it matches our pipeline.
+
+Return ONLY this JSON, no markdown:
+{
+  "executive_summary": "4-5 sentences on the dominant Indian M&A themes today. Name specific companies and deals. What does this mean for a boutique IB firm?",
+  "deal_count": <number>,
+  "sectors_active": ["sector1","sector2","sector3","sector4","sector5"],
+  "signals": [
+    {
+      "company": "Company name",
+      "sector": "Sector",
+      "type": "Acquirer/Target/Fundraise/PE Deploy/Sector Trend/Cross-border",
+      "headline": "One crisp line",
+      "detail": "3-4 sentences — deal size, rationale, what it signals",
+      "source": "Publication",
+      "range": "Deal size",
+      "age": "today/yesterday/recent",
+      "match": "Our lead or signal this matches, or empty",
+      "action": "One sharp actionable sentence for Accomplir"
+    }
+  ],
+  "sector_trends": [
+    { "sector": "Sector", "trend": "3 sentences — what is happening and what deals it creates" }
+  ],
+  "ones_to_watch": "3-4 specific companies to monitor this week with brief explanation"
+}\`
+
+    const r = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        system: 'You are a precise financial analyst. Extract M&A signals from news. Return only valid JSON array.',
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const d = await r.json();
+    let text = '';
+    if (d.content) d.content.forEach(b => { if (b.type === 'text') text += b.text; });
+
+    let signals = [];
+    try {
+      const match = text.match(/\[[\s\S]*\]/);
+      if (match) signals = JSON.parse(match[0]);
+    } catch(e) { console.warn('Parse error:', e); }
+
+    if (!signals.length) {
+      inner.innerHTML = `<div style="padding:20px;color:#aaa;font-size:13px">No strong M&A signals found in today's ${articles.length} headlines. Try again later.</div>`;
+      btn.textContent = '⚡ Scan news'; btn.classList.remove('scanning'); return;
+    }
+
+    // Sort: today first
+    const ageOrder = { today: 0, yesterday: 1, recent: 2 };
+    signals.sort((a,b) => (ageOrder[a.age]??2) - (ageOrder[b.age]??2));
+
+    inner.innerHTML = `
+      <div class="intel-title">
+        <span></span>
+        ${signals.length} signals from ${articles.length} headlines · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} · Sources: ET, Mint, BS, VCCircle, Inc42
+        <span style="margin-left:auto;font-size:10px;color:#aaa;font-style:italic;font-weight:400">~₹2-3 per scan</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        ${signals.map((s,idx) => {
+          const ageBadge = s.age === 'today'
+            ? '<span style="font-size:9px;font-weight:800;color:white;background:#1a6e4a;padding:2px 7px;border-radius:20px;letter-spacing:0.08em">TODAY</span>'
+            : s.age === 'yesterday'
+            ? '<span style="font-size:9px;font-weight:800;color:#5a2a00;background:#ffe8cc;padding:2px 7px;border-radius:20px;letter-spacing:0.08em">YESTERDAY</span>'
+            : '<span style="font-size:9px;font-weight:700;color:#888;background:#f0ede8;padding:2px 7px;border-radius:20px;letter-spacing:0.06em">RECENT</span>';
+          const safeJson = JSON.stringify(s).replace(/"/g,'&quot;');
+          return `
+          <div class="intel-card" id="icard-${idx}">
+            <div class="intel-card-header">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                <div class="intel-card-co">${s.company||'Unknown'}</div>
+                ${ageBadge}
+              </div>
+              <div class="intel-card-sector">${(s.sector||'').substring(0,22)}</div>
+            </div>
+            <div class="intel-card-intent">${s.intent||''}</div>
+            ${s.headline_ref ? `<div style="font-size:10px;color:#bbb;font-style:italic;border-left:2px solid #e8e4dc;padding-left:8px;margin-top:2px">${s.headline_ref.substring(0,80)}</div>` : ''}
+            ${s.match ? `<div style="font-size:11px;color:#1a6e4a;font-weight:600;margin-top:2px">🔗 Matches: ${s.match}</div>` : ''}
+            <div class="intel-card-footer">
+              <div class="intel-card-source">${s.source||'News'} · ${s.range||'size TBD'}</div>
+              <button class="intel-add-btn" id="iadd-${idx}" onclick="addNewsSignal(${idx}, ${safeJson})">+ Add signal</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+
+  } catch(e) {
+    inner.innerHTML = `<div style="padding:20px;color:#e53935;font-size:13px">Scan failed: ${e.message}</div>`;
+    console.error('Scan error:', e);
+  }
+
+  btn.textContent = '⚡ Scan news';
+  btn.classList.remove('scanning');
+}
+
+function addNewsSignal(idx, s) {
+  const today = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
+  const signal = {
+    date: today,
+    co: s.company||'',
+    sector: s.sector||'',
+    range: s.range||'',
+    source: s.source||'News scan',
+    contact: s.contact||'',
+    intent: s.intent||''
+  };
+  INTENT.unshift(signal);
+  renderIntent(INTENT);
+  renderIntentPreview();
+  document.getElementById('nc-intent').textContent = INTENT.length;
+  document.getElementById('s-intent').textContent = INTENT.filter(i=>i.co).length;
+  writeIntentToOneDrive({ company: signal.co, date: signal.date, sector: signal.sector, range: signal.range, source: signal.source, contact: signal.contact, intent: signal.intent });
+
+  // Mark as added
+  const btn = document.getElementById('iadd-' + idx);
+  const card = document.getElementById('icard-' + idx);
+  if (btn) { btn.textContent = '✓ Added'; btn.classList.add('added'); btn.disabled = true; }
+  if (card) { card.style.borderColor = 'rgba(26,110,74,0.4)'; card.style.background = '#f7fdf9'; }
+}
+
+
+// ── DAILY BRIEF GENERATOR ──
+async function generateBrief() {
+  const btn = document.getElementById('brief-btn');
+  const content = document.getElementById('brief-content');
+  const today = new Date();
+
+  btn.textContent = '⚡ Generating...';
+  btn.style.opacity = '0.6';
+  btn.disabled = true;
+
+  document.getElementById('brief-title').textContent = 'Daily M&A Brief';
+  document.getElementById('brief-date').textContent = today.toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+
+  content.innerHTML = '<div style="padding:40px;display:flex;align-items:center;gap:12px;color:#1a6e4a;font-size:14px;font-weight:500"><div class="spin"></div>Pulling headlines from 17 news sources...</div>';
+
+  try {
+    // Step 1: Fetch RSS
+    const rssResp = await fetch('/api/rss');
+    if (!rssResp.ok) throw new Error('RSS fetch failed: ' + rssResp.status);
+    const rssText = await rssResp.text();
+    let rssData;
+    try { rssData = JSON.parse(rssText); } catch(e) { throw new Error('RSS parse failed: ' + rssText.substring(0,100)); }
+    const articles = rssData.articles || [];
+
+    content.innerHTML = '<div style="padding:40px;display:flex;align-items:center;gap:12px;color:#1a6e4a;font-size:14px;font-weight:500"><div class="spin"></div>Analysing ' + articles.length + ' headlines...</div>';
+
+    const existingLeads = LEADS.map(l => l.co).join(', ');
+    const existingSignals = INTENT.slice(0,20).map(i=>i.co).join(', ');
+    const headlineText = articles.map((a,i) =>
+      `[${i+1}] ${a.source} | ${new Date(a.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})} | ${a.title}${a.description?' — '+a.description.substring(0,150):''}`
+    ).join('\n');
+
+    const prompt = `You are producing the daily M&A intelligence brief for Accomplir Advisors, a Mumbai boutique M&A bank. Today is ${today.toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}.
+
 OUR ACTIVE LEADS: ${existingLeads.substring(0,500)}
 OUR EXISTING INTENT SIGNALS: ${existingSignals.substring(0,300)}
 
