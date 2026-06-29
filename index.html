@@ -2472,7 +2472,7 @@ Produce a structured daily M&A brief in JSON format. Return ONLY valid JSON, no 
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 3000,
-        system: 'You are a senior M&A analyst producing a daily intelligence brief. Return only valid JSON.',
+        system: 'You are a senior M&A analyst. Return ONLY a single valid JSON object. No markdown. No backticks. No explanation. Escape all special characters in strings. Keep string values under 200 characters each.',
         messages: [{ role: 'user', content: prompt }]
       })
     });
@@ -2482,12 +2482,34 @@ Produce a structured daily M&A brief in JSON format. Return ONLY valid JSON, no 
 
     let brief;
     try {
+      // Try direct parse first
       const match = text.match(/\{[\s\S]*\}/);
-      if (match) brief = JSON.parse(match[0]);
-    } catch(e) { console.warn('Parse error:', e); }
+      if (match) {
+        try {
+          brief = JSON.parse(match[0]);
+        } catch(e1) {
+          // Try cleaning common JSON issues
+          const cleaned = match[0]
+            .replace(/[ -]/g, ' ') // control chars
+            .replace(/,\s*}/g, '}')            // trailing commas
+            .replace(/,\s*]/g, ']');
+          brief = JSON.parse(cleaned);
+        }
+      }
+    } catch(e) {
+      console.warn('Brief parse error:', e, 'Raw:', text.substring(0,300));
+      content.innerHTML = `<div style="padding:40px;color:#e53935;font-size:14px">
+        <strong>Brief generation failed.</strong><br><br>
+        The AI response couldn't be parsed. This sometimes happens when headlines contain unusual characters.
+        <br><br><button onclick="generateBrief()" style="background:#0a2a18;color:#4ade80;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:13px">Try again</button>
+      </div>`;
+      btn.textContent = '⚡ Regenerate'; btn.style.opacity = '1'; btn.disabled = false;
+      return;
+    }
 
     if (!brief) {
-      content.innerHTML = '<div style="padding:40px;color:#e53935">Could not generate brief. Try again.</div>';
+      content.innerHTML = '<div style="padding:40px;color:#e53935">Could not parse brief response. Try again.</div>';
+      btn.textContent = '⚡ Regenerate'; btn.style.opacity = '1'; btn.disabled = false;
       return;
     }
 
