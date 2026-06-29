@@ -3,92 +3,73 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const feeds = [
-    // Economic Times — broad business
-    { name: 'ET Markets', url: 'https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms' },
-    { name: 'ET Companies', url: 'https://economictimes.indiatimes.com/company/rssfeeds/2143429.cms' },
-    { name: 'ET Industry', url: 'https://economictimes.indiatimes.com/industry/rssfeeds/13352306.cms' },
-    { name: 'ET M&A', url: 'https://economictimes.indiatimes.com/topic/mergers-and-acquisitions/rssfeeds/2647163.cms' },
-    { name: 'ET Startups', url: 'https://economictimes.indiatimes.com/small-biz/startups/rssfeeds/7901299.cms' },
-
-    // Mint — broad business
-    { name: 'Mint Companies', url: 'https://www.livemint.com/rss/companies' },
-    { name: 'Mint Industry', url: 'https://www.livemint.com/rss/industry' },
-    { name: 'Mint Markets', url: 'https://www.livemint.com/rss/markets' },
-    { name: 'Mint Money', url: 'https://www.livemint.com/rss/money' },
-
-    // Business Standard
-    { name: 'BS Companies', url: 'https://www.business-standard.com/rss/companies-101.rss' },
-    { name: 'BS Markets', url: 'https://www.business-standard.com/rss/markets-106.rss' },
-    { name: 'BS Finance', url: 'https://www.business-standard.com/rss/finance-103.rss' },
-    { name: 'BS Economy', url: 'https://www.business-standard.com/rss/economy-policy-102.rss' },
-
-    // VCCircle & Inc42
-    { name: 'VCCircle', url: 'https://www.vccircle.com/feed' },
-    { name: 'Inc42', url: 'https://inc42.com/feed/' },
-
-    // Moneycontrol
-    { name: 'Moneycontrol Business', url: 'https://www.moneycontrol.com/rss/business.xml' },
-    { name: 'Moneycontrol Markets', url: 'https://www.moneycontrol.com/rss/marketreports.xml' },
+  // Google News RSS queries - aggregates ET, Mint, BS, Reuters, Moneycontrol etc
+  // Free, no API key, returns fresh articles from all major Indian business sources
+  const queries = [
+    { name: 'M&A India',           q: 'india+acquisition+merger+deal+company' },
+    { name: 'PE/VC India',         q: 'private+equity+venture+capital+india+investment+fund' },
+    { name: 'Companies buying',    q: 'india+company+acquires+buys+stake+buyout' },
+    { name: 'Hospital deals',      q: 'hospital+healthcare+india+acquisition+beds+2026' },
+    { name: 'FMCG deals',          q: 'FMCG+brand+india+acquisition+consumer+2026' },
+    { name: 'Industrial M&A',      q: 'india+manufacturing+industrial+power+acquires+2026' },
+    { name: 'Fintech deals',       q: 'fintech+payments+india+acquisition+investment+2026' },
+    { name: 'Hotel hospitality',   q: 'hotel+hospitality+india+acquisition+portfolio+2026' },
+    { name: 'Energy/Solar deals',  q: 'solar+energy+india+acquisition+EPC+2026' },
+    { name: 'Fundraise/IPO',       q: 'india+fundraise+raises+crore+capital+2026' },
+    { name: 'ET Business',         q: 'site:economictimes.indiatimes.com+acquisition+deal+india' },
+    { name: 'BS Business',         q: 'site:business-standard.com+acquisition+merger+india' },
   ];
 
+  const browser_ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
   const results = [];
   const cutoff = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000); // 72 hours
 
   await Promise.allSettled(
-    feeds.map(async (feed) => {
+    queries.map(async ({ name, q }) => {
       try {
-        const r = await fetch(feed.url, {
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; AccoNewsBot/1.0)' },
-          signal: AbortSignal.timeout(5000)
+        const url = `https://news.google.com/rss/search?q=${q}&hl=en-IN&gl=IN&ceid=IN:en`;
+        const r = await fetch(url, {
+          headers: { 'User-Agent': browser_ua },
+          signal: AbortSignal.timeout(6000)
         });
         if (!r.ok) return;
         const xml = await r.text();
 
-        // Parse items from RSS XML
+        // Parse items
         const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
-        for (const item of items.slice(0, 15)) {
+        for (const item of items) {
           const block = item[1];
-          const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
-                        block.match(/<title>(.*?)<\/title>/))?.[1]?.trim() || '';
-          const desc = (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
-                       block.match(/<description>(.*?)<\/description>/))?.[1]
-                       ?.replace(/<[^>]+>/g, '')?.trim()?.substring(0, 300) || '';
-          const pubDate = (block.match(/<pubDate>(.*?)<\/pubDate>/))?.[1]?.trim() || '';
-          const link = (block.match(/<link>(.*?)<\/link>/) ||
-                       block.match(/<link\s*\/?>(.*?)<\/link>/))?.[1]?.trim() || '';
+          const title = (block.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
+          const desc = (block.match(/<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/) || [])[1]
+            ?.replace(/<[^>]+>/g, '')?.trim()?.substring(0, 300) || '';
+          const pubDate = (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1]?.trim() || '';
+          const link = (block.match(/<link>(.*?)<\/link>/) || [])[1]?.trim() || '';
+          const source = (block.match(/<source[^>]*>(.*?)<\/source>/) || [])[1]?.trim() || name;
 
-          if (!title) continue;
+          if (!title || title === 'Google News') continue;
 
-          // Filter to last 72 hours
-          let articleDate = null;
-          if (pubDate) {
-            articleDate = new Date(pubDate);
-            if (isNaN(articleDate.getTime())) articleDate = null;
-          }
+          let articleDate = pubDate ? new Date(pubDate) : null;
+          if (articleDate && isNaN(articleDate.getTime())) articleDate = null;
           if (articleDate && articleDate < cutoff) continue;
 
           results.push({
-            source: feed.name,
+            source: source || name,
             title: title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#39;/g,"'").replace(/&quot;/g,'"'),
             description: desc.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#39;/g,"'").replace(/&quot;/g,'"'),
             date: articleDate ? articleDate.toISOString() : new Date().toISOString(),
-            link
+            link,
+            category: name
           });
         }
-      } catch(e) {
-        // silently skip failed feeds
-      }
+      } catch(e) { /* skip failed queries */ }
     })
   );
 
-  // Sort by date, newest first
+  // Sort newest first, deduplicate by title
   results.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-  // Deduplicate by similar titles
   const seen = new Set();
   const deduped = results.filter(r => {
-    const key = r.title.substring(0, 40).toLowerCase();
+    const key = r.title.substring(0, 50).toLowerCase().replace(/\s+/g, '');
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -97,6 +78,6 @@ export default async function handler(req, res) {
   res.status(200).json({
     count: deduped.length,
     fetched_at: new Date().toISOString(),
-    articles: deduped.slice(0, 120) // max 120 headlines
+    articles: deduped.slice(0, 120)
   });
 }
