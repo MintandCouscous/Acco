@@ -1391,7 +1391,9 @@ async function fetchLeads() {
       next: r['Action (Next steps)'] || r['Next steps'] || r['Next'] || '',
       progress: r['Progress/Activites done so far'] || r['Progress'] || ''
     })).filter(r => r.co);
-    NEXT_LEAD_ROW = null; // reset counter on fresh data load
+    // Don't blindly reset - only allow counter to move forward, never backward
+    const freshLeadRowCount = LEADS.length + 1;
+    if (NEXT_LEAD_ROW === null || freshLeadRowCount > NEXT_LEAD_ROW) NEXT_LEAD_ROW = freshLeadRowCount;
     renderLeads(LEADS);
     document.getElementById('nc-leads').textContent = LEADS.length;
     document.getElementById('ctx-leads').textContent = LEADS.length + ' leads';
@@ -1424,7 +1426,9 @@ async function fetchIntent() {
     document.getElementById('ctx-intent').textContent = INTENT.length + ' signals';
     document.getElementById('intent-sub').textContent = `Live from OneDrive · ${INTENT.length} signals · updated now`;
     document.getElementById('s-intent').textContent = INTENT.length;
-    NEXT_INTENT_ROW = null; // reset counter on fresh data load
+    // Don't blindly reset - only allow counter to move forward, never backward
+    const freshIntentRowCount = INTENT.length + 1;
+    if (NEXT_INTENT_ROW === null || freshIntentRowCount > NEXT_INTENT_ROW) NEXT_INTENT_ROW = freshIntentRowCount;
   } catch(e) {
     console.error('Intent fetch error:', e);
     document.getElementById('intent-body').innerHTML = '<tr><td colspan="7" style="padding:20px;color:var(--red);font-size:13px">Could not load intent signals — ask Zeenath to share the Intent Tracker file with your Microsoft account.</td></tr>';
