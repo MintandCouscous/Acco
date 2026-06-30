@@ -1203,6 +1203,8 @@ const SCOPES = ['Files.Read.All', 'Files.ReadWrite.All', 'Sites.Read.All', 'User
 
 let TOKEN = null;
 let TASKS = [], LEADS = [], INTENT = [];
+let NEXT_INTENT_ROW = null;
+let NEXT_LEAD_ROW = null;
 let msgHistory = [];
 
 // ── AUTH ──
@@ -1389,6 +1391,7 @@ async function fetchLeads() {
       next: r['Action (Next steps)'] || r['Next steps'] || r['Next'] || '',
       progress: r['Progress/Activites done so far'] || r['Progress'] || ''
     })).filter(r => r.co);
+    NEXT_LEAD_ROW = null; // reset counter on fresh data load
     renderLeads(LEADS);
     document.getElementById('nc-leads').textContent = LEADS.length;
     document.getElementById('ctx-leads').textContent = LEADS.length + ' leads';
@@ -1421,6 +1424,7 @@ async function fetchIntent() {
     document.getElementById('ctx-intent').textContent = INTENT.length + ' signals';
     document.getElementById('intent-sub').textContent = `Live from OneDrive · ${INTENT.length} signals · updated now`;
     document.getElementById('s-intent').textContent = INTENT.length;
+    NEXT_INTENT_ROW = null; // reset counter on fresh data load
   } catch(e) {
     console.error('Intent fetch error:', e);
     document.getElementById('intent-body').innerHTML = '<tr><td colspan="7" style="padding:20px;color:var(--red);font-size:13px">Could not load intent signals — ask Zeenath to share the Intent Tracker file with your Microsoft account.</td></tr>';
@@ -1869,12 +1873,17 @@ async function writeLeadToOneDrive(l) {
     ).then(r => r.json());
     const sheetName = ws.value[0].name;
 
-    // Step 3: Get used range row count
-    const range = await fetch(
-      `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${LEAD_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`,
-      { headers: { Authorization: `Bearer ${TOKEN}`, 'workbook-session-id': sessionId } }
-    ).then(r => r.json());
-    const rowNum = (range.rowCount || 5) + 1;
+    // Step 3: Get next row (use cached counter to avoid race conditions on rapid adds)
+    let rowNum;
+    if (NEXT_LEAD_ROW === null) {
+      const range = await fetch(
+        `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${LEAD_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`,
+        { headers: { Authorization: `Bearer ${TOKEN}`, 'workbook-session-id': sessionId } }
+      ).then(r => r.json());
+      NEXT_LEAD_ROW = (range.rowCount || 5) + 1;
+    }
+    rowNum = NEXT_LEAD_ROW;
+    NEXT_LEAD_ROW = NEXT_LEAD_ROW + 1;
 
     // Step 4: Write row
     const values = [[
@@ -1930,13 +1939,18 @@ async function writeIntentToOneDrive(i) {
     if (!sheetName) { console.error('writeIntent: No sheet name:', JSON.stringify(ws)); return; }
     console.log('writeIntent: Sheet name:', sheetName);
 
-    // Step 3: Get next empty row
-    const rangeResp = await fetch(
-      `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`,
-      { headers: { Authorization: `Bearer ${TOKEN}`, 'workbook-session-id': sessionId } }
-    );
-    const range = await rangeResp.json();
-    const rowNum = (range.rowCount || 5) + 1;
+    // Step 3: Get next empty row (use cached counter to avoid race conditions on rapid adds)
+    let rowNum;
+    if (NEXT_INTENT_ROW === null) {
+      const rangeResp = await fetch(
+        `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`,
+        { headers: { Authorization: `Bearer ${TOKEN}`, 'workbook-session-id': sessionId } }
+      );
+      const range = await rangeResp.json();
+      NEXT_INTENT_ROW = (range.rowCount || 5) + 1;
+    }
+    rowNum = NEXT_INTENT_ROW;
+    NEXT_INTENT_ROW = NEXT_INTENT_ROW + 1; // reserve next row immediately for any concurrent calls
     console.log('writeIntent: Writing to row', rowNum);
 
     // Step 4: Write the row
