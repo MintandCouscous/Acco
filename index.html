@@ -1857,6 +1857,11 @@ async function send() {
 
 // Write lead to OneDrive Excel via Graph API
 async function writeLeadToOneDrive(l) {
+  // Reserve row number SYNCHRONOUSLY before any async work
+  if (NEXT_LEAD_ROW === null) NEXT_LEAD_ROW = LEADS.length + 1;
+  const reservedLeadRow = NEXT_LEAD_ROW;
+  NEXT_LEAD_ROW = NEXT_LEAD_ROW + 1;
+
   try {
     TOKEN = await getToken();
     if (!TOKEN) { console.warn('No token'); return; }
@@ -1877,17 +1882,8 @@ async function writeLeadToOneDrive(l) {
     ).then(r => r.json());
     const sheetName = ws.value[0].name;
 
-    // Step 3: Get next row (use cached counter to avoid race conditions on rapid adds)
-    let rowNum;
-    if (NEXT_LEAD_ROW === null) {
-      const range = await fetch(
-        `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${LEAD_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`,
-        { headers: { Authorization: `Bearer ${TOKEN}`, 'workbook-session-id': sessionId } }
-      ).then(r => r.json());
-      NEXT_LEAD_ROW = (range.rowCount || 5) + 1;
-    }
-    rowNum = NEXT_LEAD_ROW;
-    NEXT_LEAD_ROW = NEXT_LEAD_ROW + 1;
+    // Step 3: Use the row number reserved synchronously at function start
+    const rowNum = reservedLeadRow;
 
     // Step 4: Write row
     const values = [[
@@ -1915,10 +1911,16 @@ async function writeLeadToOneDrive(l) {
 
 // Write intent signal to OneDrive Excel via Graph API
 async function writeIntentToOneDrive(i) {
+  // Reserve row number SYNCHRONOUSLY before any async work, to prevent race conditions
+  // when multiple writes are triggered close together
+  if (NEXT_INTENT_ROW === null) NEXT_INTENT_ROW = INTENT.length + 1;
+  const reservedRow = NEXT_INTENT_ROW;
+  NEXT_INTENT_ROW = NEXT_INTENT_ROW + 1;
+
   try {
     TOKEN = await getToken();
     if (!TOKEN) { console.error('writeIntent: No token available'); return; }
-    console.log('writeIntent: Starting write for', i.company);
+    console.log('writeIntent: Starting write for', i.company, 'reserved row', reservedRow);
 
     // Step 1: Open workbook session
     const sessionResp = await fetch(
@@ -1943,18 +1945,8 @@ async function writeIntentToOneDrive(i) {
     if (!sheetName) { console.error('writeIntent: No sheet name:', JSON.stringify(ws)); return; }
     console.log('writeIntent: Sheet name:', sheetName);
 
-    // Step 3: Get next empty row (use cached counter to avoid race conditions on rapid adds)
-    let rowNum;
-    if (NEXT_INTENT_ROW === null) {
-      const rangeResp = await fetch(
-        `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`,
-        { headers: { Authorization: `Bearer ${TOKEN}`, 'workbook-session-id': sessionId } }
-      );
-      const range = await rangeResp.json();
-      NEXT_INTENT_ROW = (range.rowCount || 5) + 1;
-    }
-    rowNum = NEXT_INTENT_ROW;
-    NEXT_INTENT_ROW = NEXT_INTENT_ROW + 1; // reserve next row immediately for any concurrent calls
+    // Step 3: Use the row number reserved synchronously at function start
+    const rowNum = reservedRow;
     console.log('writeIntent: Writing to row', rowNum);
 
     // Step 4: Write the row
