@@ -1904,56 +1904,82 @@ async function writeLeadToOneDrive(l) {
 async function writeIntentToOneDrive(i) {
   try {
     TOKEN = await getToken();
-    if (!TOKEN) { console.warn('No token'); return; }
+    if (!TOKEN) { console.error('writeIntent: No token available'); return; }
+    console.log('writeIntent: Starting write for', i.company);
 
+    // Step 1: Open workbook session
     const sessionResp = await fetch(
       `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/createSession`,
       { method: 'POST', headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ persistChanges: true }) }
     );
-    const session = await sessionResp.json();
-    const sessionId = session.id;
-    if (!sessionId) { console.error('No session ID for intent write:', session); return; }
+    const sessionJson = await sessionResp.json();
+    const sessionId = sessionJson.id;
+    if (!sessionId) {
+      console.error('writeIntent: No session ID:', JSON.stringify(sessionJson));
+      return;
+    }
+    console.log('writeIntent: Session opened:', sessionId.substring(0,20));
 
-    const ws = await fetch(
+    // Step 2: Get worksheet name
+    const wsResp = await fetch(
       `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/worksheets`,
       { headers: { Authorization: `Bearer ${TOKEN}`, 'workbook-session-id': sessionId } }
-    ).then(r => r.json());
-    const sheetName = ws.value[0].name;
+    );
+    const ws = await wsResp.json();
+    const sheetName = ws.value?.[0]?.name;
+    if (!sheetName) { console.error('writeIntent: No sheet name:', JSON.stringify(ws)); return; }
+    console.log('writeIntent: Sheet name:', sheetName);
 
-    const range = await fetch(
+    // Step 3: Get next empty row
+    const rangeResp = await fetch(
       `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`,
       { headers: { Authorization: `Bearer ${TOKEN}`, 'workbook-session-id': sessionId } }
-    ).then(r => r.json());
+    );
+    const range = await rangeResp.json();
     const rowNum = (range.rowCount || 5) + 1;
+    console.log('writeIntent: Writing to row', rowNum);
 
-    // Intent sheet columns: S.no, Date discovered, Intent spotted at, Investor, Location, Primary Product, Sector, Sectors Intent on, Products intent on, Deal range, Intent Source, Person, Designation, Email, Phone, Date Contacted, Comments
+    // Step 4: Write the row
     const values = [[
       String(INTENT.length),
-      i.date||new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),
-      i.source||'',
-      i.company||'',
+      i.date || new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),
+      i.source || '',
+      i.company || '',
       '', '',
-      i.sector||'',
-      i.intent||'',
+      i.sector || '',
+      i.intent || '',
       '',
-      i.range||'',
-      i.source||'',
-      i.contact||'',
+      i.range || '',
+      i.source || '',
+      i.contact || '',
       '', '', '', '', ''
     ]];
 
-    const patch = await fetch(
+    const patchResp = await fetch(
       `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/range(address='A${rowNum}:Q${rowNum}')`,
-      { method: 'PATCH', headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json', 'workbook-session-id': sessionId }, body: JSON.stringify({ values }) }
+      {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json', 'workbook-session-id': sessionId },
+        body: JSON.stringify({ values })
+      }
     );
-    if (patch.ok) console.log('✅ Intent written to OneDrive row', rowNum);
-    else { const e = await patch.json(); console.error('❌ Intent write failed:', patch.status, e); }
+    const patchText = await patchResp.text();
+    if (patchResp.ok) {
+      console.log('writeIntent: ✅ Written to OneDrive row', rowNum, 'for', i.company);
+    } else {
+      console.error('writeIntent: ❌ PATCH failed:', patchResp.status, patchText.substring(0,300));
+    }
 
+    // Step 5: Close session
     await fetch(
       `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/closeSession`,
       { method: 'POST', headers: { Authorization: `Bearer ${TOKEN}`, 'workbook-session-id': sessionId } }
     );
-  } catch(e) { console.error('Intent OneDrive error:', e); }
+    console.log('writeIntent: Session closed');
+
+  } catch(e) {
+    console.error('writeIntent: Exception:', e.message, e.stack?.substring(0,200));
+  }
 }
 
 
