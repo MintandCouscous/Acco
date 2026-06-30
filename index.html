@@ -721,6 +721,39 @@ tr { transition: background 0.1s; }
 .brief-stat-box-num { font-family: var(--serif); font-size: 32px; color: #0a2a18; }
 .brief-stat-box-label { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; font-weight: 600; }
 
+
+/* Today banner */
+.today-banner {
+  display: flex; align-items: baseline; gap: 8px;
+  background: linear-gradient(135deg, #f0faf5, #fdf8f0);
+  border: 1.5px solid #e8f5ee; border-radius: 12px;
+  padding: 12px 18px; margin-bottom: 16px;
+}
+.today-banner-num { font-family: var(--serif); font-size: 24px; color: #1a6e4a; }
+.today-banner-label { font-size: 12px; color: #1a6e4a; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* Active filter pills */
+.active-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-top: -6px; margin-bottom: 14px; }
+.active-filters:empty { display: none; margin: 0; }
+.filter-pill {
+  display: flex; align-items: center; gap: 6px;
+  background: #0a2a18; color: #4ade80;
+  font-size: 11px; font-weight: 600; padding: 4px 6px 4px 12px;
+  border-radius: 20px; animation: fadeIn 0.2s ease;
+}
+.filter-pill button {
+  background: rgba(255,255,255,0.15); border: none; color: white;
+  width: 16px; height: 16px; border-radius: 50%; cursor: pointer;
+  font-size: 11px; line-height: 1; display: flex; align-items: center; justify-content: center;
+  padding: 0; transition: background 0.15s;
+}
+.filter-pill button:hover { background: rgba(255,255,255,0.3); }
+.filter-pill.clear-all {
+  background: white; color: #888; border: 1.5px solid #e8e4dc; padding: 4px 12px;
+  cursor: pointer;
+}
+.filter-pill.clear-all:hover { border-color: #c0392b; color: #c0392b; }
+
 </style>
 </head>
 <body>
@@ -974,13 +1007,23 @@ tr { transition: background 0.1s; }
           <div><div class="page-title">Leads</div><div class="page-sub" id="leads-sub">Live from OneDrive · updating...</div></div>
           <div class="page-actions"><button class="add-btn" onclick="openModal('lead')">+ Add lead</button></div>
         </div>
+        <div class="today-banner" id="leads-today-banner" style="display:none">
+          <span class="today-banner-num" id="leads-today-count">0</span>
+          <span class="today-banner-label">leads added today</span>
+        </div>
         <div class="filter-bar">
           <select id="l-status" onchange="filterLeads()"><option value="">All statuses</option><option>Open</option><option>Closed</option><option>On Hold</option></select>
           <select id="l-type" onchange="filterLeads()"><option value="">All types</option><option>Buy</option><option>Sell</option></select>
           <select id="l-owner" onchange="filterLeads()"><option value="">All owners</option><option>Zeenath</option><option>Ashish</option><option>Yohaanne</option><option>Libin</option><option>Nandita</option><option>Disha</option></select>
+          <select id="l-sort" onchange="filterLeads()">
+            <option value="recent">Recently added</option>
+            <option value="az">A→Z</option>
+            <option value="status">By status</option>
+          </select>
           <input id="l-search" placeholder="Search company or action..." oninput="filterLeads()">
           <span class="filter-count" id="lc-label">— leads</span>
         </div>
+        <div class="active-filters" id="l-active-filters"></div>
         <div class="tbl-wrap"><table>
           <thead><tr><th>#</th><th>Company</th><th>Type</th><th>Size</th><th>Status</th><th>Lead by</th><th>Contact</th><th>Date received</th><th>Next action</th></tr></thead>
           <tbody id="leads-body"><tr><td colspan="8"><div class="data-loading"><div class="spin"></div>Reading from OneDrive...</div></td></tr></tbody>
@@ -990,11 +1033,24 @@ tr { transition: background 0.1s; }
       <!-- INTENT -->
       <div id="view-intent" class="view">
         <div class="page-hdr">
-          <div><div class="page-title">Investor Intent</div><div class="page-sub" id="intent-sub">Live from OneDrive · updating...</div></div>
+          <div>
+            <div class="page-title">Investor Intent</div>
+            <div class="page-sub" id="intent-sub">Live from OneDrive · updating...</div>
+          </div>
           <div class="page-actions"><button class="add-btn" onclick="openModal('intent')">+ Add signal</button></div>
+        </div>
+        <div class="today-banner" id="intent-today-banner" style="display:none">
+          <span class="today-banner-num" id="intent-today-count">0</span>
+          <span class="today-banner-label">signals added today</span>
         </div>
         <div class="filter-bar">
           <select id="i-sector" onchange="filterIntent()"><option value="">All sectors</option></select>
+          <select id="i-daterange" onchange="filterIntent()">
+            <option value="">All time</option>
+            <option value="today">Added today</option>
+            <option value="week">Last 7 days</option>
+            <option value="month">Last 30 days</option>
+          </select>
           <select id="i-sort" onchange="filterIntent()">
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
@@ -1003,6 +1059,7 @@ tr { transition: background 0.1s; }
           <input id="i-search" placeholder="Search company, sector or intent..." oninput="filterIntent()">
           <span class="filter-count" id="ic-label">— signals</span>
         </div>
+        <div class="active-filters" id="i-active-filters"></div>
         <div class="tbl-wrap"><table>
           <thead><tr><th>Date</th><th>Company</th><th>Sector</th><th>Range</th><th>Source</th><th>Contact</th><th>Intent</th></tr></thead>
           <tbody id="intent-body"><tr><td colspan="7"><div class="data-loading"><div class="spin"></div>Reading from OneDrive...</div></td></tr></tbody>
@@ -1348,6 +1405,7 @@ async function fetchTasks() {
     populateProjects();
     document.getElementById('nc-tasks').textContent = TASKS.length;
     document.getElementById('ctx-tasks').textContent = TASKS.length + ' tasks';
+    updateTasksTodayBanner();
   } catch(e) { console.error('Tasks fetch error:', e); }
 }
 
@@ -1398,6 +1456,7 @@ async function fetchLeads() {
     document.getElementById('nc-leads').textContent = LEADS.length;
     document.getElementById('ctx-leads').textContent = LEADS.length + ' leads';
     document.getElementById('leads-sub').textContent = `Live from OneDrive · ${LEADS.length} leads · updated now`;
+    updateLeadsTodayBanner();
     document.getElementById('s-leads').textContent = LEADS.filter(l=>l.status==='Open').length;
   } catch(e) {
     console.error('Leads fetch error:', e);
@@ -1425,6 +1484,7 @@ async function fetchIntent() {
     document.getElementById('nc-intent').textContent = INTENT.length;
     document.getElementById('ctx-intent').textContent = INTENT.length + ' signals';
     document.getElementById('intent-sub').textContent = `Live from OneDrive · ${INTENT.length} signals · updated now`;
+    updateTodayBanner();
     document.getElementById('s-intent').textContent = INTENT.length;
     // Don't blindly reset - only allow counter to move forward, never backward
     const freshIntentRowCount = INTENT.length + 1;
@@ -1588,13 +1648,81 @@ function filterTasks() {
   const ow = document.getElementById('t-owner').value.toLowerCase();
   const st = document.getElementById('t-status').value.toLowerCase();
   const pr = document.getElementById('t-project').value;
+  const due = document.getElementById('t-due') ? document.getElementById('t-due').value : '';
   const q = document.getElementById('t-search').value.toLowerCase();
-  renderTasks(TASKS.filter(t =>
-    (!ow || (t.Name||'').toLowerCase().includes(ow)) &&
-    (!st || (t.Status||'').toLowerCase().includes(st)) &&
-    (!pr || t.Project === pr) &&
-    (!q || (t.Task||'').toLowerCase().includes(q) || (t.Project||'').toLowerCase().includes(q))
-  ));
+
+  const data = TASKS.filter(t => {
+    if (ow && !(t.Name||'').toLowerCase().includes(ow)) return false;
+    if (st && !(t.Status||'').toLowerCase().includes(st)) return false;
+    if (pr && t.Project !== pr) return false;
+    if (q && !((t.Task||'').toLowerCase().includes(q) || (t.Project||'').toLowerCase().includes(q))) return false;
+    if (due) {
+      const d = t['Due Date'];
+      if (due === 'nodate' && d) return false;
+      if (due === 'overdue' && !(d && isOverdue(d))) return false;
+      if (due === 'today' && !(d && isDueToday(d))) return false;
+      if (due === 'week' && !(d && isDueSoon(d))) return false;
+    }
+    return true;
+  });
+
+  renderTasks(data);
+  renderTaskActiveFilters();
+  updateTasksTodayBanner();
+}
+
+function isDueToday(due) {
+  if (!due) return false;
+  try { const d = new Date(due.replace(/(\d{2})-(\d{2})-(\d{4})/, '$3-$2-$1')); return d.toDateString() === TODAY.toDateString(); } catch { return false; }
+}
+
+function renderTaskActiveFilters() {
+  const el = document.getElementById('t-active-filters');
+  if (!el) return;
+  const ow = document.getElementById('t-owner').value;
+  const st = document.getElementById('t-status').value;
+  const pr = document.getElementById('t-project').value;
+  const due = document.getElementById('t-due') ? document.getElementById('t-due').value : '';
+  const q = document.getElementById('t-search').value;
+
+  const pills = [];
+  if (ow) pills.push({ label: 'Owner: ' + ow, clear: () => { document.getElementById('t-owner').value = ''; filterTasks(); } });
+  if (st) pills.push({ label: 'Status: ' + st, clear: () => { document.getElementById('t-status').value = ''; filterTasks(); } });
+  if (pr) pills.push({ label: 'Project: ' + pr, clear: () => { document.getElementById('t-project').value = ''; filterTasks(); } });
+  if (due) {
+    const labels = { overdue: 'Overdue', today: 'Due today', week: 'Due this week', nodate: 'No due date' };
+    pills.push({ label: labels[due], clear: () => { document.getElementById('t-due').value = ''; filterTasks(); } });
+  }
+  if (q) pills.push({ label: 'Search: "' + q + '"', clear: () => { document.getElementById('t-search').value = ''; filterTasks(); } });
+
+  if (!pills.length) { el.innerHTML = ''; return; }
+  el.innerHTML = pills.map((p, idx) =>
+    '<span class="filter-pill">' + p.label + '<button onclick="clearTaskFilter(' + idx + ')">×</button></span>'
+  ).join('') + '<span class="filter-pill clear-all" onclick="clearAllTaskFilters()">Clear all</span>';
+  window._taskFilterClears = pills.map(p => p.clear);
+}
+
+function clearTaskFilter(idx) {
+  if (window._taskFilterClears && window._taskFilterClears[idx]) window._taskFilterClears[idx]();
+}
+
+function clearAllTaskFilters() {
+  document.getElementById('t-owner').value = '';
+  document.getElementById('t-status').value = '';
+  document.getElementById('t-project').value = '';
+  if (document.getElementById('t-due')) document.getElementById('t-due').value = '';
+  document.getElementById('t-search').value = '';
+  filterTasks();
+}
+
+function updateTasksTodayBanner() {
+  const banner = document.getElementById('tasks-today-banner');
+  const countEl = document.getElementById('tasks-today-count');
+  if (!banner || !countEl) return;
+  // Tasks don't have a "date added" field from sheet, so we track session-added count
+  const sessionAdded = window._tasksAddedThisSession || 0;
+  countEl.textContent = sessionAdded;
+  banner.style.display = sessionAdded > 0 ? 'flex' : 'none';
 }
 function populateProjects() {
   const sel = document.getElementById('t-project');
@@ -1627,6 +1755,7 @@ function filterLeads() {
   const ow = document.getElementById('l-owner').value.toLowerCase();
   const q = document.getElementById('l-search').value.toLowerCase();
   const sort = document.getElementById('l-sort') ? document.getElementById('l-sort').value : 'recent';
+
   let data = LEADS.filter(l =>
     (!st || l.status === st) &&
     (!ty || l.type === ty) &&
@@ -1636,7 +1765,57 @@ function filterLeads() {
   if (sort === 'recent') data = [...data].reverse();
   else if (sort === 'az') data = [...data].sort((a,b) => a.co.localeCompare(b.co));
   else if (sort === 'status') data = [...data].sort((a,b) => a.status.localeCompare(b.status));
+
   renderLeads(data);
+  renderLeadActiveFilters();
+  updateLeadsTodayBanner();
+}
+
+function renderLeadActiveFilters() {
+  const el = document.getElementById('l-active-filters');
+  if (!el) return;
+  const st = document.getElementById('l-status').value;
+  const ty = document.getElementById('l-type').value;
+  const ow = document.getElementById('l-owner').value;
+  const q = document.getElementById('l-search').value;
+
+  const pills = [];
+  if (st) pills.push({ label: 'Status: ' + st, clear: () => { document.getElementById('l-status').value = ''; filterLeads(); } });
+  if (ty) pills.push({ label: 'Type: ' + ty, clear: () => { document.getElementById('l-type').value = ''; filterLeads(); } });
+  if (ow) pills.push({ label: 'Owner: ' + ow, clear: () => { document.getElementById('l-owner').value = ''; filterLeads(); } });
+  if (q) pills.push({ label: 'Search: "' + q + '"', clear: () => { document.getElementById('l-search').value = ''; filterLeads(); } });
+
+  if (!pills.length) { el.innerHTML = ''; return; }
+  el.innerHTML = pills.map((p, idx) =>
+    '<span class="filter-pill">' + p.label + '<button onclick="clearLeadFilter(' + idx + ')">×</button></span>'
+  ).join('') + '<span class="filter-pill clear-all" onclick="clearAllLeadFilters()">Clear all</span>';
+  window._leadFilterClears = pills.map(p => p.clear);
+}
+
+function clearLeadFilter(idx) {
+  if (window._leadFilterClears && window._leadFilterClears[idx]) window._leadFilterClears[idx]();
+}
+
+function clearAllLeadFilters() {
+  document.getElementById('l-status').value = '';
+  document.getElementById('l-type').value = '';
+  document.getElementById('l-owner').value = '';
+  document.getElementById('l-search').value = '';
+  filterLeads();
+}
+
+function updateLeadsTodayBanner() {
+  const banner = document.getElementById('leads-today-banner');
+  const countEl = document.getElementById('leads-today-count');
+  if (!banner || !countEl) return;
+  const now = new Date();
+  const todayCount = LEADS.filter(l => {
+    if (!l.date) return false;
+    const days = parseSortDate(now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})) - parseSortDate(l.date);
+    return days === 0;
+  }).length;
+  countEl.textContent = todayCount;
+  banner.style.display = todayCount > 0 ? 'flex' : 'none';
 }
 
 // ── INTENT TABLE ──
@@ -1665,14 +1844,78 @@ function filterIntent() {
   const sec = document.getElementById('i-sector').value;
   const q = document.getElementById('i-search').value.toLowerCase();
   const sort = document.getElementById('i-sort') ? document.getElementById('i-sort').value : 'newest';
-  let data = INTENT.filter(i =>
-    (!sec || i.sector === sec) &&
-    (!q || i.co.toLowerCase().includes(q) || (i.intent||'').toLowerCase().includes(q) || (i.sector||'').toLowerCase().includes(q))
-  );
+  const dateRange = document.getElementById('i-daterange') ? document.getElementById('i-daterange').value : '';
+
+  const now = new Date();
+  const todayStr = now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
+
+  let data = INTENT.filter(i => {
+    if (sec && i.sector !== sec) return false;
+    if (q && !(i.co.toLowerCase().includes(q) || (i.intent||'').toLowerCase().includes(q) || (i.sector||'').toLowerCase().includes(q))) return false;
+    if (dateRange) {
+      const days = parseSortDate(now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})) - parseSortDate(i.date);
+      if (dateRange === 'today' && days > 0) return false;
+      if (dateRange === 'week' && days > 7) return false;
+      if (dateRange === 'month' && days > 30) return false;
+    }
+    return true;
+  });
+
   if (sort === 'newest') data = [...data].sort((a,b) => parseSortDate(b.date) - parseSortDate(a.date));
   else if (sort === 'oldest') data = [...data].sort((a,b) => parseSortDate(a.date) - parseSortDate(b.date));
   else if (sort === 'az') data = [...data].sort((a,b) => a.co.localeCompare(b.co));
+
   renderIntent(data);
+  renderActiveFilters();
+  updateTodayBanner();
+}
+
+function renderActiveFilters() {
+  const el = document.getElementById('i-active-filters');
+  if (!el) return;
+  const sec = document.getElementById('i-sector').value;
+  const dateRange = document.getElementById('i-daterange').value;
+  const q = document.getElementById('i-search').value;
+
+  const pills = [];
+  if (sec) pills.push({ label: 'Sector: ' + sec, clear: () => { document.getElementById('i-sector').value = ''; filterIntent(); } });
+  if (dateRange) {
+    const labels = { today: 'Added today', week: 'Last 7 days', month: 'Last 30 days' };
+    pills.push({ label: labels[dateRange], clear: () => { document.getElementById('i-daterange').value = ''; filterIntent(); } });
+  }
+  if (q) pills.push({ label: 'Search: "' + q + '"', clear: () => { document.getElementById('i-search').value = ''; filterIntent(); } });
+
+  if (!pills.length) { el.innerHTML = ''; return; }
+
+  el.innerHTML = pills.map((p, idx) =>
+    '<span class="filter-pill">' + p.label + '<button onclick="clearIntentFilter(' + idx + ')">×</button></span>'
+  ).join('') + '<span class="filter-pill clear-all" onclick="clearAllIntentFilters()">Clear all</span>';
+
+  window._intentFilterClears = pills.map(p => p.clear);
+}
+
+function clearIntentFilter(idx) {
+  if (window._intentFilterClears && window._intentFilterClears[idx]) window._intentFilterClears[idx]();
+}
+
+function clearAllIntentFilters() {
+  document.getElementById('i-sector').value = '';
+  document.getElementById('i-daterange').value = '';
+  document.getElementById('i-search').value = '';
+  filterIntent();
+}
+
+function updateTodayBanner() {
+  const banner = document.getElementById('intent-today-banner');
+  const countEl = document.getElementById('intent-today-count');
+  if (!banner || !countEl) return;
+  const now = new Date();
+  const todayCount = INTENT.filter(i => {
+    const days = parseSortDate(now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})) - parseSortDate(i.date);
+    return days === 0;
+  }).length;
+  countEl.textContent = todayCount;
+  banner.style.display = todayCount > 0 ? 'flex' : 'none';
 }
 function parseSortDate(d) {
   if (!d) return 0;
@@ -2027,10 +2270,12 @@ function submitModal() {
     if (!task) { alert('Please enter a task description'); return; }
 
     TASKS.push({ Name: owner, Project: project, Task: task, 'Due Date': due, Status: status, Notes: notes });
+    window._tasksAddedThisSession = (window._tasksAddedThisSession || 0) + 1;
     renderTasks(TASKS);
     updateStats();
     renderUrgent();
     document.getElementById('nc-tasks').textContent = TASKS.length;
+    updateTasksTodayBanner();
 
     fetch(APPS_SCRIPT_URL, {
       method: 'POST', mode: 'no-cors',
