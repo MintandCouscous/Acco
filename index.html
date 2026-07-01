@@ -754,6 +754,24 @@ tr { transition: background 0.1s; }
 }
 .filter-pill.clear-all:hover { border-color: #c0392b; color: #c0392b; }
 
+
+/* Workspace toggle */
+.workspace-toggle {
+  display: flex; gap: 2px; background: #f0ede8; border-radius: 8px; padding: 3px;
+}
+.ws-btn {
+  padding: 6px 16px; border-radius: 6px; border: none; background: none;
+  font-size: 12px; font-weight: 600; color: #888; cursor: pointer;
+  font-family: var(--sans); transition: all 0.15s;
+}
+.ws-btn.active { background: white; color: #0a2a18; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.ws-btn:hover:not(.active) { color: #444; }
+
+/* Insolvency theme accents */
+.insol-mode .nav-btn.active { background: #2a1a0a !important; }
+.insol-mode .strip { background: #2a1a0a !important; }
+.insol-mode .hero { background: linear-gradient(160deg, #fdf8f0 0%, #fef5ec 40%, #fcf0e8 100%) !important; }
+
 </style>
 </head>
 <body>
@@ -787,7 +805,10 @@ tr { transition: background 0.1s; }
     <div class="topbar-left">
       <div class="t-logo-mark"><span>A</span></div><span class="t-wordmark">Acco</span>
       <div class="t-divider"></div>
-      <span class="t-subtitle">Accomplir Deal Intelligence</span>
+      <div class="workspace-toggle">
+        <button class="ws-btn active" id="ws-ma" onclick="switchWorkspace('ma')">M&amp;A</button>
+        <button class="ws-btn" id="ws-insol" onclick="switchWorkspace('insol')">Insolvency</button>
+      </div>
     </div>
     <div class="topbar-right">
       <div class="live-pill" id="live-pill" style="cursor:default"><span class="live-dot"></span><span id="live-text">Connecting...</span></div>
@@ -848,6 +869,38 @@ tr { transition: background 0.1s; }
         </button>
       </div>
       <div class="sidebar-footer" id="last-refresh-label">Not yet refreshed</div>
+    </nav>
+
+    <!-- INSOLVENCY SIDEBAR -->
+    <nav class="sidebar" id="insol-sidebar" style="display:none">
+      <div class="nav-group">
+        <div class="nav-label">Insolvency</div>
+        <button class="nav-btn active" onclick="show('insol-overview',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          Overview
+        </button>
+        <button class="nav-btn" onclick="show('insol-tasks',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+          Insol Tasks
+          <span class="nav-count" id="nc-insol-tasks">—</span>
+        </button>
+        <button class="nav-btn" onclick="show('insol-forma',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          Form A
+          <span class="nav-count" id="nc-forma">—</span>
+        </button>
+        <button class="nav-btn" onclick="show('insol-formg',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          Form G
+          <span class="nav-count" id="nc-formg">—</span>
+        </button>
+        <button class="nav-btn" onclick="show('insol-form2',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          Form 2
+          <span class="nav-count" id="nc-form2">—</span>
+        </button>
+      </div>
+      <div class="sidebar-footer">IBBI data refreshed live</div>
     </nav>
 
     <main class="content">
@@ -1151,6 +1204,97 @@ tr { transition: background 0.1s; }
         </div>
       </div>
 
+      <!-- INSOLVENCY OVERVIEW -->
+      <div id="view-insol-overview" class="view">
+        <div class="page-hdr">
+          <div>
+            <div class="page-title">Insolvency Desk</div>
+            <div class="page-sub">Live from IBBI · Form A, Form G &amp; internal mandates</div>
+          </div>
+          <div class="page-actions"><button class="add-btn" onclick="refreshIBBI()" id="ibbi-refresh-btn">⚡ Refresh IBBI data</button></div>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="stat-label">Active Insol mandates</div><div class="stat-val" id="s-insol-tasks">—</div><div class="stat-sub">internal tasks</div></div>
+          <div class="stat"><div class="stat-label">Form A today</div><div class="stat-val" id="s-forma-today">—</div><div class="stat-sub">public announcements</div></div>
+          <div class="stat"><div class="stat-label">Form G today</div><div class="stat-val" id="s-formg-today">—</div><div class="stat-sub">resolution plans invited</div></div>
+          <div class="stat"><div class="stat-label">Total Form A tracked</div><div class="stat-val" id="s-forma-total">—</div><div class="stat-sub">live from IBBI</div></div>
+          <div class="stat"><div class="stat-label">Total Form G tracked</div><div class="stat-val" id="s-formg-total">—</div><div class="stat-sub">live from IBBI</div></div>
+        </div>
+        <div class="two-col">
+          <div>
+            <div class="section-title">Our active Insolvency tasks</div>
+            <div class="card-box" id="insol-tasks-preview"><div class="data-loading"><div class="spin"></div>Loading...</div></div>
+          </div>
+          <div>
+            <div class="section-title">Latest Form A announcements</div>
+            <div class="card-box" id="forma-preview"><div class="data-loading"><div class="spin"></div>Loading from IBBI...</div></div>
+          </div>
+        </div>
+        <div class="section-title">Latest Form G — resolution plans invited</div>
+        <div class="card-box" id="formg-preview"><div class="data-loading"><div class="spin"></div>Loading from IBBI...</div></div>
+      </div>
+
+      <!-- INSOLVENCY TASKS -->
+      <div id="view-insol-tasks" class="view">
+        <div class="page-hdr">
+          <div><div class="page-title">Insolvency Tasks</div><div class="page-sub">Tasks tagged "Insol-" from the shared task tracker</div></div>
+          <div class="page-actions"><button class="add-btn" onclick="openInsolTaskModal()">+ Add Insol task</button></div>
+        </div>
+        <div class="filter-bar">
+          <select id="it-owner" onchange="filterInsolTasks()"><option value="">All people</option><option>Zeenath</option><option>Ashish</option><option>Yohaanne</option><option>Libin</option><option>Nandita</option><option>Disha</option></select>
+          <select id="it-status" onchange="filterInsolTasks()"><option value="">All statuses</option><option value="progress">In progress</option><option value="not started">Not started</option><option value="completed">Completed</option><option value="blocked">Blocked</option></select>
+          <input id="it-search" placeholder="Search task or mandate..." oninput="filterInsolTasks()">
+          <span class="filter-count" id="itc-label">— tasks</span>
+        </div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Owner</th><th>Mandate</th><th>Task</th><th>Due</th><th>Status</th><th>Notes</th></tr></thead>
+          <tbody id="insol-tasks-body"><tr><td colspan="6"><div class="data-loading"><div class="spin"></div>Loading...</div></td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- FORM A -->
+      <div id="view-insol-forma" class="view">
+        <div class="page-hdr">
+          <div><div class="page-title">Form A — Public Announcements</div><div class="page-sub" id="forma-sub">Live from IBBI · ibbi.gov.in/public-announcement</div></div>
+          <div class="page-actions"><button class="add-btn" onclick="refreshIBBI()">⚡ Refresh</button></div>
+        </div>
+        <div class="filter-bar">
+          <input id="fa-search" placeholder="Search company, applicant or RP..." oninput="filterFormA()">
+          <span class="filter-count" id="fac-label">— records</span>
+        </div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Date</th><th>Type</th><th>Corporate Debtor</th><th>Applicant</th><th>Resolution Professional</th><th>Last date submission</th></tr></thead>
+          <tbody id="forma-body"><tr><td colspan="6"><div class="data-loading"><div class="spin"></div>Loading from IBBI...</div></td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- FORM G -->
+      <div id="view-insol-formg" class="view">
+        <div class="page-hdr">
+          <div><div class="page-title">Form G — Resolution Plans</div><div class="page-sub" id="formg-sub">Live from IBBI · ibbi.gov.in/resolution-plans</div></div>
+          <div class="page-actions"><button class="add-btn" onclick="refreshIBBI()">⚡ Refresh</button></div>
+        </div>
+        <div class="filter-bar">
+          <input id="fg-search" placeholder="Search company or resolution professional..." oninput="filterFormG()">
+          <span class="filter-count" id="fgc-label">— records</span>
+        </div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Corporate Debtor</th><th>Resolution Professional</th><th>Last EOI date</th><th>Prospective applicants</th><th>Objections deadline</th></tr></thead>
+          <tbody id="formg-body"><tr><td colspan="5"><div class="data-loading"><div class="spin"></div>Loading from IBBI...</div></td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- FORM 2 -->
+      <div id="view-insol-form2" class="view">
+        <div class="page-hdr">
+          <div><div class="page-title">Form 2 — Consents</div><div class="page-sub">Mandates where we have given consent to act</div></div>
+        </div>
+        <div class="card-box" style="padding:40px;text-align:center;color:var(--ink-4)">
+          <div style="font-size:14px;margin-bottom:8px">Form 2 tracker coming next</div>
+          <div style="font-size:12px">Tell me the fields you want tracked here and I'll build the table and write-back.</div>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -1249,6 +1393,16 @@ const ZEENATH_DRIVE_ID = 'b!1W9KBzwT2U-g11vQnhoF84K9CMzPESpOqfjVwD7KgA3ecz4fD4n2
 const LEAD_ITEM_ID = '01EKQ5GGZFEQFY6O7MHBCKQHJIJXEO3MWR';
 const INTENT_ITEM_ID = '01EKQ5GG5B35RQBGD3AFB2R7GWI6CNKAB5';
 const TODAY = new Date();
+// Force IST timezone for date comparisons (UTC+5:30)
+function getISTDate() {
+  const now = new Date();
+  const istOffset = 5.5 * 60 * 60000; // IST = UTC + 5:30
+  return new Date(now.getTime() + istOffset);
+}
+function todayIST() {
+  const ist = getISTDate();
+  return new Date(ist.getFullYear(), ist.getMonth(), ist.getDate());
+}
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQ2HmRzbLGyEud_MJaHU5K_ZXlZFJE34uG0_60db2sVwhNbaSIYagZz1_W2pfKbt5XFA/exec';
 
 const msalConfig = {
@@ -1316,7 +1470,7 @@ function onSignedIn(account) {
   const initials = name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
   document.getElementById('user-av').textContent = initials;
   document.getElementById('user-name').textContent = name.split(' ')[0];
-  const hour = new Date().getHours();
+  const hour = getISTDate().getHours();
   const timeGreet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : hour < 21 ? 'Good evening' : 'Good night';
   const firstName = (account.name || account.username || '').split(' ')[0];
   document.getElementById('greeting-name').textContent = timeGreet + ', ' + firstName;
@@ -1470,6 +1624,7 @@ async function fetchIntent() {
     const rows = await getExcelRows(ZEENATH_DRIVE_ID, INTENT_ITEM_ID);
     if (!rows.length) { console.warn('No intent rows'); return; }
     console.log('Intent headers:', Object.keys(rows[0]));
+    console.log('Intent rows received:', rows.length, 'sample:', JSON.stringify(rows.slice(0,2)));
     INTENT = rows.map(r => ({
       date: r['Date disovered'] || r['Date discovered'] || r['Date'] || r['date'] || r['Date spotted'] || '',
       co: r['Investor'] || r['Company'] || r['company'] || r['investor'] || '',
@@ -1498,13 +1653,13 @@ async function fetchIntent() {
 // ── DATES ──
 function isOverdue(due) {
   if (!due) return false;
-  try { const d = new Date(due.replace(/(\d{2})-(\d{2})-(\d{4})/, '$3-$2-$1')); return !isNaN(d) && d < TODAY; } catch { return false; }
+  try { const d = new Date(due.replace(/(\d{2})-(\d{2})-(\d{4})/, '$3-$2-$1')); return !isNaN(d) && d < todayIST(); } catch { return false; }
 }
 function isDueSoon(due) {
   if (!due) return false;
   try {
     const d = new Date(due.replace(/(\d{2})-(\d{2})-(\d{4})/, '$3-$2-$1'));
-    const diff = (d - TODAY) / 864e5;
+    const diff = (d - todayIST()) / 864e5;
     return diff >= 0 && diff <= 7;
   } catch { return false; }
 }
@@ -1673,7 +1828,7 @@ function filterTasks() {
 
 function isDueToday(due) {
   if (!due) return false;
-  try { const d = new Date(due.replace(/(\d{2})-(\d{2})-(\d{4})/, '$3-$2-$1')); return d.toDateString() === TODAY.toDateString(); } catch { return false; }
+  try { const d = new Date(due.replace(/(\d{2})-(\d{2})-(\d{4})/, '$3-$2-$1')); return d.toDateString() === todayIST().toDateString(); } catch { return false; }
 }
 
 function renderTaskActiveFilters() {
@@ -1853,7 +2008,9 @@ function filterIntent() {
     if (sec && i.sector !== sec) return false;
     if (q && !(i.co.toLowerCase().includes(q) || (i.intent||'').toLowerCase().includes(q) || (i.sector||'').toLowerCase().includes(q))) return false;
     if (dateRange) {
-      const days = parseSortDate(now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})) - parseSortDate(i.date);
+      const istNow = getISTDate();
+      const istTodayStr = istNow.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
+      const days = parseSortDate(istTodayStr) - parseSortDate(i.date);
       if (dateRange === 'today' && days > 0) return false;
       if (dateRange === 'week' && days > 7) return false;
       if (dateRange === 'month' && days > 30) return false;
@@ -1910,8 +2067,10 @@ function updateTodayBanner() {
   const countEl = document.getElementById('intent-today-count');
   if (!banner || !countEl) return;
   const now = new Date();
+  const istNow = getISTDate();
+  const istTodayStr = istNow.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
   const todayCount = INTENT.filter(i => {
-    const days = parseSortDate(now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})) - parseSortDate(i.date);
+    const days = parseSortDate(istTodayStr) - parseSortDate(i.date);
     return days === 0;
   }).length;
   countEl.textContent = todayCount;
@@ -3101,6 +3260,196 @@ function addBriefSignal(id, s) {
   const btn = document.getElementById('badd-' + id);
   if (btn) { btn.textContent = '✓ Added'; btn.classList.add('added'); btn.disabled = true; }
 }
+
+
+// ── WORKSPACE TOGGLE ──
+let CURRENT_WORKSPACE = 'ma';
+function switchWorkspace(ws) {
+  CURRENT_WORKSPACE = ws;
+  document.getElementById('ws-ma').classList.toggle('active', ws === 'ma');
+  document.getElementById('ws-insol').classList.toggle('active', ws === 'insol');
+  document.body.classList.toggle('insol-mode', ws === 'insol');
+
+  const maSidebar = document.querySelector('.sidebar:not(#insol-sidebar)');
+  const insolSidebar = document.getElementById('insol-sidebar');
+
+  if (ws === 'ma') {
+    if (maSidebar) maSidebar.style.display = 'flex';
+    if (insolSidebar) insolSidebar.style.display = 'none';
+    show('overview', document.querySelectorAll('.nav-btn')[0]);
+  } else {
+    if (maSidebar) maSidebar.style.display = 'none';
+    if (insolSidebar) insolSidebar.style.display = 'flex';
+    show('insol-overview', insolSidebar.querySelector('.nav-btn'));
+    if (!window._ibbiLoaded) refreshIBBI();
+    renderInsolTasksPreview();
+    filterInsolTasks();
+  }
+}
+
+// ── IBBI LIVE DATA ──
+let FORM_A = [], FORM_G = [];
+
+async function refreshIBBI() {
+  const btn = document.getElementById('ibbi-refresh-btn');
+  if (btn) { btn.textContent = '⚡ Refreshing...'; btn.style.opacity = '0.6'; }
+
+  try {
+    const r = await fetch('/api/ibbi');
+    const data = await r.json();
+    FORM_A = data.formA || [];
+    FORM_G = data.formG || [];
+    window._ibbiLoaded = true;
+
+    renderFormA(FORM_A);
+    renderFormG(FORM_G);
+    renderFormAPreview();
+    renderFormGPreview();
+    updateInsolStats();
+
+    document.getElementById('forma-sub').textContent = `Live from IBBI · ${FORM_A.length} records · updated now`;
+    document.getElementById('formg-sub').textContent = `Live from IBBI · ${FORM_G.length} records · updated now`;
+  } catch(e) {
+    console.error('IBBI fetch error:', e);
+  }
+
+  if (btn) { btn.textContent = '⚡ Refresh IBBI data'; btn.style.opacity = '1'; }
+}
+
+function isToday(dateStr) {
+  if (!dateStr) return false;
+  // dateStr format: DD-MM-YYYY
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return false;
+  const d = new Date(parts[2], parts[1]-1, parts[0]);
+  return d.toDateString() === new Date().toDateString();
+}
+
+function updateInsolStats() {
+  document.getElementById('s-forma-total').textContent = FORM_A.length;
+  document.getElementById('s-formg-total').textContent = FORM_G.length;
+  document.getElementById('s-forma-today').textContent = FORM_A.filter(f => isToday(f.announcementDate)).length;
+  document.getElementById('s-formg-today').textContent = FORM_G.length > 0 ? '—' : '0'; // Form G dates are textual, skip today calc
+  document.getElementById('nc-forma').textContent = FORM_A.length;
+  document.getElementById('nc-formg').textContent = FORM_G.length;
+}
+
+function renderFormA(data) {
+  document.getElementById('fac-label').textContent = data.length + ' records';
+  document.getElementById('forma-body').innerHTML = data.map(f => `<tr>
+    <td class="dim" style="white-space:nowrap">${f.announcementDate||'—'}</td>
+    <td class="dim">${(f.type||'—').replace('Public Announcement of ','')}</td>
+    <td class="strong">${f.company||'—'}</td>
+    <td class="dim">${(f.applicant||'—').substring(0,30)}</td>
+    <td class="dim">${(f.resolutionProfessional||'—').substring(0,30)}</td>
+    <td class="dim" style="white-space:nowrap">${f.lastDateSubmission||'—'}</td>
+  </tr>`).join('') || '<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--muted)">No records found.</td></tr>';
+}
+
+function renderFormG(data) {
+  document.getElementById('fgc-label').textContent = data.length + ' records';
+  document.getElementById('formg-body').innerHTML = data.map(f => `<tr>
+    <td class="strong">${f.company||'—'}</td>
+    <td class="dim">${(f.resolutionProfessional||'—').substring(0,30)}</td>
+    <td class="dim" style="white-space:nowrap">${f.lastDateEOI||'—'}</td>
+    <td class="dim" style="white-space:nowrap">${f.dateIssueProspective||'—'}</td>
+    <td class="dim" style="white-space:nowrap">${f.lastDateObjections||'—'}</td>
+  </tr>`).join('') || '<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--muted)">No records found.</td></tr>';
+}
+
+function renderFormAPreview() {
+  const el = document.getElementById('forma-preview');
+  if (!el) return;
+  el.innerHTML = FORM_A.slice(0,6).map(f => `
+    <div class="task-row ip">
+      <div class="av av-x">${(f.company||'?')[0].toUpperCase()}</div>
+      <div style="flex:1">
+        <div class="task-name">${f.company}</div>
+        <div class="task-meta">${(f.type||'').replace('Public Announcement of ','')} · RP: ${f.resolutionProfessional} · Due ${f.lastDateSubmission}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderFormGPreview() {
+  const el = document.getElementById('formg-preview');
+  if (!el) return;
+  el.innerHTML = FORM_G.slice(0,6).map(f => `
+    <div class="task-row ip">
+      <div class="av av-x">${(f.company||'?')[0].toUpperCase()}</div>
+      <div style="flex:1">
+        <div class="task-name">${f.company}</div>
+        <div class="task-meta">RP: ${f.resolutionProfessional} · EOI due ${f.lastDateEOI}</div>
+      </div>
+    </div>`).join('');
+}
+
+function filterFormA() {
+  const q = (document.getElementById('fa-search').value || '').toLowerCase();
+  renderFormA(FORM_A.filter(f =>
+    !q || (f.company||'').toLowerCase().includes(q) || (f.applicant||'').toLowerCase().includes(q) || (f.resolutionProfessional||'').toLowerCase().includes(q)
+  ));
+}
+
+function filterFormG() {
+  const q = (document.getElementById('fg-search').value || '').toLowerCase();
+  renderFormG(FORM_G.filter(f =>
+    !q || (f.company||'').toLowerCase().includes(q) || (f.resolutionProfessional||'').toLowerCase().includes(q)
+  ));
+}
+
+// ── INSOLVENCY TASKS (filtered from main TASKS by "Insol-" prefix) ──
+function getInsolTasks() {
+  return TASKS.filter(t => (t.Project||'').toLowerCase().startsWith('insol-') || (t.Project||'').toLowerCase().startsWith('insol -'));
+}
+
+function filterInsolTasks() {
+  const ow = (document.getElementById('it-owner').value || '').toLowerCase();
+  const st = (document.getElementById('it-status').value || '').toLowerCase();
+  const q = (document.getElementById('it-search').value || '').toLowerCase();
+  const insolTasks = getInsolTasks();
+  const data = insolTasks.filter(t =>
+    (!ow || (t.Name||'').toLowerCase().includes(ow)) &&
+    (!st || (t.Status||'').toLowerCase().includes(st)) &&
+    (!q || (t.Task||'').toLowerCase().includes(q) || (t.Project||'').toLowerCase().includes(q))
+  );
+  document.getElementById('itc-label').textContent = data.length + ' tasks';
+  document.getElementById('insol-tasks-body').innerHTML = data.map(t => `<tr>
+    <td class="strong" style="white-space:nowrap">${t.Name||'—'}</td>
+    <td class="dim" style="white-space:nowrap">${(t.Project||'').replace(/^insol-?\s*/i,'')}</td>
+    <td class="strong">${t.Task||'—'}</td>
+    <td style="white-space:nowrap">${dueBadge(t['Due Date'], t.Status)}</td>
+    <td>${stBadge(t.Status)}</td>
+    <td class="note">${(t.Notes||'').substring(0,80)}</td>
+  </tr>`).join('') || '<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--muted)">No Insolvency tasks found. Ask the team to prefix project names with "Insol-".</td></tr>';
+  document.getElementById('nc-insol-tasks').textContent = insolTasks.length;
+  document.getElementById('s-insol-tasks').textContent = insolTasks.length;
+}
+
+function renderInsolTasksPreview() {
+  const el = document.getElementById('insol-tasks-preview');
+  if (!el) return;
+  const insolTasks = getInsolTasks().slice(0, 6);
+  el.innerHTML = insolTasks.map(t => {
+    const av = avClass(t.Name);
+    return `<div class="task-row ip">
+      <div class="av ${av}">${(t.Name||'?')[0].toUpperCase()}</div>
+      <div style="flex:1">
+        <div class="task-name">${t.Task}</div>
+        <div class="task-meta">${t.Name} · ${(t.Project||'').replace(/^insol-?\s*/i,'')} · ${dueBadge(t['Due Date'], t.Status)}</div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No Insolvency tasks yet. Ask the team to prefix project names with "Insol-".</div>';
+}
+
+function openInsolTaskModal() {
+  openModal('task');
+  // Pre-fill project field with Insol- prefix hint
+  setTimeout(() => {
+    const projInput = document.getElementById('m-task-project');
+    if (projInput) projInput.placeholder = 'Insol-CompanyName';
+  }, 50);
+}
+
 
 // ── INIT ──
 checkExistingSession();
