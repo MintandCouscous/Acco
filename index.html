@@ -1493,8 +1493,15 @@ async function getExcelRows(driveId, itemId) {
   const sheets = await graphFetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/workbook/worksheets`);
   if (!sheets || !sheets.value || !sheets.value.length) return [];
   const sheetName = sheets.value[0].name;
-  // Get used range
-  const range = await graphFetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`);
+  // Get used range - add buffer of 20 rows beyond what Excel reports to catch recently written rows
+  const usedRange = await graphFetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`);
+  if (!usedRange || !usedRange.values || usedRange.values.length < 2) return [];
+  const rowCount = usedRange.rowCount || usedRange.values.length;
+  const colCount = usedRange.columnCount || usedRange.values[0].length;
+  // Read with 20-row buffer to catch rows written since last cache update
+  const endRow = rowCount + 20;
+  const endCol = String.fromCharCode(64 + Math.min(colCount, 26));
+  const range = await graphFetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/workbook/worksheets('${encodeURIComponent(sheetName)}')/range(address='A1:${endCol}${endRow}')`);
   if (!range || !range.values || range.values.length < 2) return [];
 
   // Find the real header row — prefer a row with named headers over "Column1, Column2" etc
