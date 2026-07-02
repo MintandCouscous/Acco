@@ -1393,15 +1393,11 @@ const ZEENATH_DRIVE_ID = 'b!1W9KBzwT2U-g11vQnhoF84K9CMzPESpOqfjVwD7KgA3ecz4fD4n2
 const LEAD_ITEM_ID = '01EKQ5GGZFEQFY6O7MHBCKQHJIJXEO3MWR';
 const INTENT_ITEM_ID = '01EKQ5GG5B35RQBGD3AFB2R7GWI6CNKAB5';
 const TODAY = new Date();
-// Force IST timezone for date comparisons (UTC+5:30)
-function getISTDate() {
-  const now = new Date();
-  const istOffset = 5.5 * 60 * 60000; // IST = UTC + 5:30
-  return new Date(now.getTime() + istOffset);
-}
+// Use browser local time (device is in IST, so this is always correct)
+function getISTDate() { return new Date(); }
 function todayIST() {
-  const ist = getISTDate();
-  return new Date(ist.getFullYear(), ist.getMonth(), ist.getDate());
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQ2HmRzbLGyEud_MJaHU5K_ZXlZFJE34uG0_60db2sVwhNbaSIYagZz1_W2pfKbt5XFA/exec';
 
