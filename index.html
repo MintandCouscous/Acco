@@ -2198,9 +2198,9 @@ async function send() {
     + '- Infer missing fields: no project = use "Deal Sourcing" for deals, "Housekeeping" for admin\n'
     + '- For "log I spoke to X at Y" = create a follow-up task\n'
     + '- For questions/analysis: just answer directly, no JSON needed\n'
-    + '- NEVER say you cannot write to external systems
-- CRITICAL: When logging anything, you MUST output the ACTION_LEAD:/ACTION_TASK:/ACTION_INTENT: block FIRST, before any human text. The app reads these blocks to write to the trackers. If you skip the JSON block, the data will NOT be saved. No exceptions.
-- Format: ACTION_LEAD: {"company":"Name","type":"Sell","status":"Open","size":"165cr","lead":"Ashish","contact":"","next":"Initial outreach"}';
+    + '- NEVER say you cannot write to external systems\n'
+    + '- CRITICAL: When logging, output ACTION_LEAD:/ACTION_TASK:/ACTION_INTENT: JSON block FIRST. If you skip it, data will NOT be saved.\n'
+    + '- Format: ACTION_LEAD: {"company":"Name","type":"Sell","status":"Open","size":"165cr","lead":"Ashish","contact":"","next":"Initial outreach"}';
 
   try {
     const r = await fetch('/api/chat', {
