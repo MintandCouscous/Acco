@@ -2138,6 +2138,15 @@ function show(view, el) {
   document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('active'));
   document.getElementById('view-'+view).classList.add('active');
   if (el) el.classList.add('active');
+  // Auto-load IBBI data when navigating to insolvency views
+  if (['insol-overview','insol-forma','insol-formg'].includes(view) && !window._ibbiLoaded) {
+    refreshIBBI();
+  }
+  // Auto-filter insol tasks when navigating there
+  if (view === 'insol-tasks') {
+    filterInsolTasks();
+    renderInsolTasksPreview();
+  }
 }
 
 // ── ACCO ──
@@ -2189,7 +2198,9 @@ async function send() {
     + '- Infer missing fields: no project = use "Deal Sourcing" for deals, "Housekeeping" for admin\n'
     + '- For "log I spoke to X at Y" = create a follow-up task\n'
     + '- For questions/analysis: just answer directly, no JSON needed\n'
-    + '- NEVER say you cannot write to external systems';
+    + '- NEVER say you cannot write to external systems
+- CRITICAL: When logging anything, you MUST output the ACTION_LEAD:/ACTION_TASK:/ACTION_INTENT: block FIRST, before any human text. The app reads these blocks to write to the trackers. If you skip the JSON block, the data will NOT be saved. No exceptions.
+- Format: ACTION_LEAD: {"company":"Name","type":"Sell","status":"Open","size":"165cr","lead":"Ashish","contact":"","next":"Initial outreach"}';
 
   try {
     const r = await fetch('/api/chat', {
@@ -2201,13 +2212,36 @@ async function send() {
     const reply = d.content && d.content[0] ? d.content[0].text : "Couldn't respond — try again.";
 
     // Parse all action blocks
-    const taskMatches = [...reply.matchAll(/ACTION_TASK:\s*(\{[^}]+\})/g)];
-    const leadMatches = [...reply.matchAll(/ACTION_LEAD:\s*(\{[^}]+\})/g)];
-    const intentMatches = [...reply.matchAll(/ACTION_INTENT:\s*(\{[^}]+\})/g)];
+    // Extract JSON blocks - handle both single-line and multiline JSON
+    function extractActionBlocks(text, action) {
+      const results = [];
+      let searchFrom = 0;
+      while (true) {
+        const idx = text.indexOf(action + ':', searchFrom);
+        if (idx === -1) break;
+        const openBrace = text.indexOf('{', idx);
+        if (openBrace === -1) break;
+        // Find matching close brace
+        let depth = 0, closeBrace = -1;
+        for (let i = openBrace; i < text.length; i++) {
+          if (text[i] === '{') depth++;
+          else if (text[i] === '}') { depth--; if (depth === 0) { closeBrace = i; break; } }
+        }
+        if (closeBrace === -1) break;
+        try {
+          const json = JSON.parse(text.substring(openBrace, closeBrace + 1));
+          results.push(json);
+        } catch(e) { console.warn('JSON parse failed for', action, e); }
+        searchFrom = closeBrace + 1;
+      }
+      return results;
+    }
+    const taskMatches = extractActionBlocks(reply, 'ACTION_TASK');
+    const leadMatches = extractActionBlocks(reply, 'ACTION_LEAD');
+    const intentMatches = extractActionBlocks(reply, 'ACTION_INTENT');
 
-    taskMatches.forEach(function(m) {
+    taskMatches.forEach(function(t) {
       try {
-        const t = JSON.parse(m[1]);
         TASKS.push({ Name: t.owner||'', Project: t.project||'Deal Sourcing', Task: t.task||'', 'Due Date': t.due||'', Status: t.status||'Not Started', Notes: t.notes||'' });
         renderTasks(TASKS);
         updateStats();
@@ -2220,21 +2254,18 @@ async function send() {
       } catch(e) { console.warn('Task parse error:', e, m[1]); }
     });
 
-    leadMatches.forEach(function(m) {
-      try {
-        const l = JSON.parse(m[1]);
-        LEADS.push({ n: LEADS.length+1, co: l.company||'', type: l.type||'Sell', status: l.status||'Open', size: l.size||'', lead: l.lead||'', contact: l.contact||'', next: l.next||'', date: '27-Jun-26' });
-        renderLeads(LEADS);
-        renderLeadPreview();
-        document.getElementById('nc-leads').textContent = LEADS.length;
-        // Write to OneDrive
-        writeLeadToOneDrive(l);
-      } catch(e) { console.warn('Lead parse error:', e, m[1]); }
+    leadMatches.forEach(function(l) {
+      console.log('ACTION_LEAD parsed:', l);
+      const today = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
+      LEADS.push({ n: LEADS.length+1, co: l.company||'', type: l.type||'Sell', status: l.status||'Open', size: l.size||'', lead: l.lead||'', contact: l.contact||'', next: l.next||'', date: today });
+      renderLeads(LEADS);
+      renderLeadPreview();
+      document.getElementById('nc-leads').textContent = LEADS.length;
+      writeLeadToOneDrive(l);
     });
 
-    intentMatches.forEach(function(m) {
+    intentMatches.forEach(function(i) {
       try {
-        const i = JSON.parse(m[1]);
         INTENT.unshift({ date: i.date||'27-Jun-26', co: i.company||'', sector: i.sector||'', range: i.range||'', source: i.source||'', contact: i.contact||'', intent: i.intent||'' });
         renderIntent(INTENT);
         renderIntentPreview();
