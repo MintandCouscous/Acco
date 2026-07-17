@@ -808,6 +808,7 @@ tr { transition: background 0.1s; }
       <div class="workspace-toggle">
         <button class="ws-btn active" id="ws-ma" onclick="switchWorkspace('ma')">M&amp;A</button>
         <button class="ws-btn" id="ws-insol" onclick="switchWorkspace('insol')">Insolvency</button>
+        <button class="ws-btn" id="ws-stress" onclick="switchWorkspace('stress')">Stress</button>
       </div>
     </div>
     <div class="topbar-right">
@@ -871,6 +872,38 @@ tr { transition: background 0.1s; }
       <div class="sidebar-footer" id="last-refresh-label">Not yet refreshed</div>
     </nav>
 
+    <!-- STRESS SIDEBAR -->
+    <nav class="sidebar" id="stress-sidebar" style="display:none">
+      <div class="nav-group">
+        <div class="nav-label">Stress Intelligence</div>
+        <button class="nav-btn active" onclick="show('stress-overview',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          Overview
+        </button>
+        <button class="nav-btn" onclick="show('stress-downgrades',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
+          Downgrades
+          <span class="nav-count" id="nc-downgrades">—</span>
+        </button>
+        <button class="nav-btn" onclick="show('stress-debt',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          Debt Stress
+          <span class="nav-count" id="nc-stress">—</span>
+        </button>
+        <button class="nav-btn" onclick="show('stress-expansion',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+          Expansion
+          <span class="nav-count" id="nc-expansion">—</span>
+        </button>
+        <button class="nav-btn" onclick="show('stress-watchlist',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          Watchlist
+          <span class="nav-count" id="nc-watchlist">—</span>
+        </button>
+      </div>
+      <div class="sidebar-footer" id="stress-refresh-label">Not yet scanned</div>
+    </nav>
+
     <!-- INSOLVENCY SIDEBAR -->
     <nav class="sidebar" id="insol-sidebar" style="display:none">
       <div class="nav-group">
@@ -900,16 +933,7 @@ tr { transition: background 0.1s; }
           <span class="nav-count" id="nc-form2">—</span>
         </button>
       </div>
-      <hr class="nav-sep">
-      <div class="nav-group">
-        <div class="nav-label">Credit Intelligence</div>
-        <button class="nav-btn" onclick="show('credeye',this)">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-          Credeye
-          <span class="nav-count" id="nc-credeye">—</span>
-        </button>
-      </div>
-      <div class="sidebar-footer">IBBI + credit data live</div>
+      <div class="sidebar-footer">IBBI data refreshed live</div>
     </nav>
 
     <main class="content">
@@ -1292,6 +1316,134 @@ tr { transition: background 0.1s; }
           <tbody id="formg-body"><tr><td colspan="5"><div class="data-loading"><div class="spin"></div>Loading from IBBI...</div></td></tr></tbody>
         </table></div>
       </div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- STRESS WORKSPACE VIEWS -->
+      <!-- ══════════════════════════════════════ -->
+
+      <!-- STRESS OVERVIEW -->
+      <div id="view-stress-overview" class="view">
+        <div class="page-hdr">
+          <div>
+            <div class="page-title" style="display:flex;align-items:center;gap:12px">
+              Stress Intelligence
+              <span style="font-size:12px;font-weight:600;color:#c0392b;background:#fdeaea;padding:3px 12px;border-radius:20px;font-family:var(--sans);letter-spacing:0.04em">CREDEYE</span>
+            </div>
+            <div class="page-sub">Rating actions · Debt stress · NPA · Expansion signals · live from ICRA, CRISIL, CARE Ratings</div>
+          </div>
+          <div class="page-actions">
+            <button class="add-btn" onclick="runCredeye()" id="credeye-scan-btn">⚡ Scan now</button>
+          </div>
+        </div>
+
+        <!-- Watchlist bar -->
+        <div id="stress-watchlist-bar" style="background:linear-gradient(135deg,#0a2a18,#1a3a28);border-radius:12px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span style="font-size:10px;font-weight:700;color:rgba(74,222,128,0.7);text-transform:uppercase;letter-spacing:0.12em;white-space:nowrap">Watching</span>
+          <div id="stress-watchlist-pills" style="display:flex;gap:6px;flex-wrap:wrap;flex:1"></div>
+          <button onclick="addStressWatchlist()" style="font-size:11px;font-weight:700;color:#4ade80;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.3);border-radius:20px;padding:5px 12px;cursor:pointer;font-family:var(--sans);white-space:nowrap">+ Add company</button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats" style="margin-bottom:24px">
+          <div class="stat" style="cursor:pointer" onclick="show('stress-downgrades',document.querySelectorAll('#stress-sidebar .nav-btn')[1])">
+            <div class="stat-label">Downgrades</div>
+            <div class="stat-val red" id="s-crede-down">—</div>
+            <div class="stat-sub">last 4 days</div>
+          </div>
+          <div class="stat" style="cursor:pointer" onclick="show('stress-debt',document.querySelectorAll('#stress-sidebar .nav-btn')[2])">
+            <div class="stat-label">Debt stress</div>
+            <div class="stat-val amber" id="s-crede-stress">—</div>
+            <div class="stat-sub">NPA · NCLT · OTS</div>
+          </div>
+          <div class="stat" style="cursor:pointer" onclick="show('stress-expansion',document.querySelectorAll('#stress-sidebar .nav-btn')[3])">
+            <div class="stat-label">Expansion signals</div>
+            <div class="stat-val green" id="s-crede-expand">—</div>
+            <div class="stat-sub">capex · growth</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Upgrades</div>
+            <div class="stat-val" id="s-crede-up">—</div>
+            <div class="stat-sub">positive momentum</div>
+          </div>
+          <div class="stat" style="cursor:pointer;background:#0a2a18;border-color:#0a2a18" onclick="show('stress-watchlist',document.querySelectorAll('#stress-sidebar .nav-btn')[4])">
+            <div class="stat-label" style="color:rgba(255,255,255,0.5)">Watchlist hits</div>
+            <div class="stat-val" id="s-crede-watch" style="color:#4ade80">—</div>
+            <div class="stat-sub" style="color:rgba(255,255,255,0.35)">your companies</div>
+          </div>
+        </div>
+
+        <!-- Overview grid -->
+        <div id="stress-overview-content">
+          <div style="text-align:center;padding:60px;color:#aaa">
+            <div style="font-size:48px;margin-bottom:16px">👁</div>
+            <div style="font-size:16px;font-weight:600;color:#555;margin-bottom:8px">Credeye is watching</div>
+            <div style="font-size:13px;max-width:400px;margin:0 auto;line-height:1.7">Click <strong>Scan now</strong> to pull the latest rating actions, debt stress signals, and expansion announcements from across Indian financial news.</div>
+            <button onclick="runCredeye()" style="margin-top:24px;background:#0a2a18;color:#4ade80;border:none;padding:12px 28px;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)">⚡ Scan credit intelligence</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STRESS DOWNGRADES -->
+      <div id="view-stress-downgrades" class="view">
+        <div class="page-hdr">
+          <div><div class="page-title">Rating Downgrades</div><div class="page-sub">ICRA · CRISIL · CARE · India Ratings · Brickwork — last 4 days</div></div>
+          <div class="page-actions"><button class="add-btn" onclick="runCredeye()">⚡ Refresh</button></div>
+        </div>
+        <div class="filter-bar">
+          <input id="down-search" placeholder="Search company or rating agency..." oninput="filterStressView('downgrades')">
+          <span class="filter-count" id="down-count">— records</span>
+        </div>
+        <div id="stress-downgrades-content" class="tbl-wrap"><table>
+          <thead><tr><th>Date</th><th>Company</th><th>Signal</th><th>Source</th><th>Action</th></tr></thead>
+          <tbody id="stress-downgrades-body"><tr><td colspan="5"><div class="data-loading"><div class="spin"></div>Run scan to load...</div></td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- STRESS DEBT -->
+      <div id="view-stress-debt" class="view">
+        <div class="page-hdr">
+          <div><div class="page-title">Debt Stress & NPA</div><div class="page-sub">NCLT admissions · NPA classifications · OTS settlements · Wilful defaulters</div></div>
+          <div class="page-actions"><button class="add-btn" onclick="runCredeye()">⚡ Refresh</button></div>
+        </div>
+        <div class="filter-bar">
+          <input id="debt-search" placeholder="Search company or bank..." oninput="filterStressView('stress')">
+          <span class="filter-count" id="debt-count">— records</span>
+        </div>
+        <div id="stress-debt-content" class="tbl-wrap"><table>
+          <thead><tr><th>Date</th><th>Company</th><th>Signal</th><th>Source</th><th>Action</th></tr></thead>
+          <tbody id="stress-debt-body"><tr><td colspan="5"><div class="data-loading"><div class="spin"></div>Run scan to load...</div></td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- STRESS EXPANSION -->
+      <div id="view-stress-expansion" class="view">
+        <div class="page-hdr">
+          <div><div class="page-title">Expansion & Capex Signals</div><div class="page-sub">Companies announcing growth — potential M&A buyers or fundraise targets</div></div>
+          <div class="page-actions"><button class="add-btn" onclick="runCredeye()">⚡ Refresh</button></div>
+        </div>
+        <div class="filter-bar">
+          <input id="exp-search" placeholder="Search company or sector..." oninput="filterStressView('expansion')">
+          <span class="filter-count" id="exp-count">— records</span>
+        </div>
+        <div id="stress-expansion-content" class="tbl-wrap"><table>
+          <thead><tr><th>Date</th><th>Company</th><th>Signal</th><th>Source</th><th>Action</th></tr></thead>
+          <tbody id="stress-expansion-body"><tr><td colspan="5"><div class="data-loading"><div class="spin"></div>Run scan to load...</div></td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- STRESS WATCHLIST -->
+      <div id="view-stress-watchlist" class="view">
+        <div class="page-hdr">
+          <div><div class="page-title">Watchlist</div><div class="page-sub">Companies you're monitoring — any credit event highlighted instantly</div></div>
+          <div class="page-actions"><button class="add-btn" onclick="addStressWatchlist()">+ Add company</button></div>
+        </div>
+        <div id="stress-watchlist-content">
+          <div style="text-align:center;padding:40px;color:#aaa;font-size:13px">Add companies to your watchlist — any downgrade, stress signal or expansion announcement will appear here automatically after scanning.</div>
+        </div>
+      </div>
+
+      <!-- OLD CREDEYE (keep for backward compat, hidden) -->
+      <div id="view-credeye" class="view" style="display:none"></div>
 
       <!-- CREDEYE — Credit Intelligence -->
       <div id="view-credeye" class="view">
@@ -3355,26 +3507,8 @@ function addBriefSignal(id, s) {
 // ── WORKSPACE TOGGLE ──
 let CURRENT_WORKSPACE = 'ma';
 function switchWorkspace(ws) {
+  // Implemented in Stress JS block below — this is overridden
   CURRENT_WORKSPACE = ws;
-  document.getElementById('ws-ma').classList.toggle('active', ws === 'ma');
-  document.getElementById('ws-insol').classList.toggle('active', ws === 'insol');
-  document.body.classList.toggle('insol-mode', ws === 'insol');
-
-  const maSidebar = document.querySelector('.sidebar:not(#insol-sidebar)');
-  const insolSidebar = document.getElementById('insol-sidebar');
-
-  if (ws === 'ma') {
-    if (maSidebar) maSidebar.style.display = 'flex';
-    if (insolSidebar) insolSidebar.style.display = 'none';
-    show('overview', document.querySelectorAll('.nav-btn')[0]);
-  } else {
-    if (maSidebar) maSidebar.style.display = 'none';
-    if (insolSidebar) insolSidebar.style.display = 'flex';
-    show('insol-overview', insolSidebar.querySelector('.nav-btn'));
-    if (!window._ibbiLoaded) refreshIBBI();
-    renderInsolTasksPreview();
-    filterInsolTasks();
-  }
 }
 
 // ── IBBI LIVE DATA ──
@@ -3697,6 +3831,293 @@ async function openCredeye() {
 
 // Auto-render watchlist on load
 setTimeout(renderWatchlist, 100);
+
+
+// ── STRESS WORKSPACE (Credeye) ──
+let STRESS_DATA = null;
+let STRESS_WATCHLIST = JSON.parse(localStorage.getItem('stress_watchlist') || '[]');
+
+// ── Switch workspace to Stress ──
+const _origSwitchWS = switchWorkspace;
+// Override switchWorkspace to handle 'stress'
+window.switchWorkspace = function(ws) {
+  CURRENT_WORKSPACE = ws;
+  document.getElementById('ws-ma').classList.toggle('active', ws === 'ma');
+  document.getElementById('ws-insol').classList.toggle('active', ws === 'insol');
+  document.getElementById('ws-stress').classList.toggle('active', ws === 'stress');
+  document.body.classList.remove('insol-mode');
+
+  const maSidebar = document.querySelector('.sidebar:not(#insol-sidebar):not(#stress-sidebar)');
+  const insolSidebar = document.getElementById('insol-sidebar');
+  const stressSidebar = document.getElementById('stress-sidebar');
+
+  if (maSidebar) maSidebar.style.display = ws === 'ma' ? 'flex' : 'none';
+  if (insolSidebar) insolSidebar.style.display = ws === 'insol' ? 'flex' : 'none';
+  if (stressSidebar) stressSidebar.style.display = ws === 'stress' ? 'flex' : 'none';
+  document.body.classList.toggle('insol-mode', ws === 'insol');
+
+  if (ws === 'ma') {
+    show('overview', document.querySelectorAll('.sidebar:not(#insol-sidebar):not(#stress-sidebar) .nav-btn')[0]);
+  } else if (ws === 'insol') {
+    show('insol-overview', document.querySelector('#insol-sidebar .nav-btn'));
+    if (!window._ibbiLoaded) refreshIBBI();
+  } else if (ws === 'stress') {
+    show('stress-overview', document.querySelector('#stress-sidebar .nav-btn'));
+    renderStressWatchlistPills();
+    if (!STRESS_DATA) runCredeye();
+  }
+};
+
+// ── Watchlist ──
+function renderStressWatchlistPills() {
+  const el = document.getElementById('stress-watchlist-pills');
+  if (!el) return;
+  if (!STRESS_WATCHLIST.length) {
+    el.innerHTML = '<span style="font-size:12px;color:rgba(255,255,255,0.35);font-style:italic">No companies added yet</span>';
+  } else {
+    el.innerHTML = STRESS_WATCHLIST.map((co, i) => `
+      <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.25);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;color:#4ade80">
+        ${co}
+        <button onclick="removeStressWatchlist(${i})" style="background:none;border:none;cursor:pointer;color:rgba(74,222,128,0.5);font-size:13px;line-height:1;padding:0">×</button>
+      </span>`).join('');
+  }
+  const wlCount = STRESS_WATCHLIST.length;
+  const nc = document.getElementById('nc-watchlist');
+  if (nc) nc.textContent = wlCount || '—';
+  // Update watchlist view
+  renderStressWatchlistView();
+}
+
+function addStressWatchlist() {
+  const co = prompt('Company name to monitor for credit events:');
+  if (!co || !co.trim()) return;
+  STRESS_WATCHLIST.push(co.trim());
+  localStorage.setItem('stress_watchlist', JSON.stringify(STRESS_WATCHLIST));
+  renderStressWatchlistPills();
+  if (STRESS_DATA) renderAllStressViews();
+}
+
+function removeStressWatchlist(idx) {
+  STRESS_WATCHLIST.splice(idx, 1);
+  localStorage.setItem('stress_watchlist', JSON.stringify(STRESS_WATCHLIST));
+  renderStressWatchlistPills();
+  if (STRESS_DATA) renderAllStressViews();
+}
+
+function isStressWatchlistHit(article) {
+  if (!STRESS_WATCHLIST.length) return false;
+  const text = (article.title + ' ' + (article.description||'')).toLowerCase();
+  return STRESS_WATCHLIST.some(co => text.includes(co.toLowerCase()));
+}
+
+function renderStressWatchlistView() {
+  const el = document.getElementById('stress-watchlist-content');
+  if (!el) return;
+  if (!STRESS_WATCHLIST.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;font-size:13px">Add companies to monitor. Any credit event — downgrade, NPA, NCLT admission, expansion — will appear here automatically after scanning.</div>';
+    return;
+  }
+  if (!STRESS_DATA) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;font-size:13px">Run a scan to see credit events for your watchlist companies.</div>';
+    return;
+  }
+  const all = [...(STRESS_DATA.downgrades||[]),...(STRESS_DATA.stress||[]),...(STRESS_DATA.expansion||[]),...(STRESS_DATA.upgrades||[])];
+  const hits = all.filter(a => isStressWatchlistHit(a));
+  const s_wl = document.getElementById('s-crede-watch');
+  if (s_wl) s_wl.textContent = hits.length || '0';
+  const nc = document.getElementById('nc-watchlist');
+  if (nc) nc.textContent = hits.length || '—';
+  if (!hits.length) {
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:#aaa;font-size:13px">No recent credit events found for: <strong>${STRESS_WATCHLIST.join(', ')}</strong>. Try scanning again or broaden company names.</div>`;
+    return;
+  }
+  el.innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr><th>Date</th><th>Company</th><th>Signal</th><th>Type</th><th>Source</th><th>Action</th></tr></thead>
+    <tbody>${hits.map(a => renderStressRow(a, true)).join('')}</tbody>
+  </table></div>`;
+}
+
+// ── Render a stress table row ──
+function renderStressRow(a, showType) {
+  const hit = isStressWatchlistHit(a);
+  const date = (() => {
+    try {
+      const d = new Date(a.date);
+      const diff = Math.floor((new Date() - d) / 3600000);
+      if (diff < 24) return `<span style="font-size:10px;font-weight:700;color:white;background:#1a6e4a;padding:2px 7px;border-radius:20px">TODAY</span>`;
+      if (diff < 48) return `<span style="font-size:10px;font-weight:700;color:#5a2a00;background:#ffe8cc;padding:2px 7px;border-radius:20px">YEST</span>`;
+      return `<span style="font-size:10px;color:#aaa">${d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'})}</span>`;
+    } catch { return '—'; }
+  })();
+  const catColors = { downgrade:'#fdeaea;color:#c0392b', stress:'#fef3dc;color:#7a4500', expansion:'#e8f5ee;color:#1a6e4a', upgrade:'#e8eeff;color:#1a3a9e' };
+  const catLabel = { downgrade:'⬇ Downgrade', stress:'⚠ Stress', expansion:'↗ Expansion', upgrade:'⬆ Upgrade' };
+  const bg = hit ? 'background:#f0faf5;' : '';
+
+  return `<tr style="${bg}">
+    <td style="white-space:nowrap">${date}</td>
+    <td class="strong" style="max-width:180px">${a.title.substring(0,80)}</td>
+    <td class="note" style="font-size:12px;max-width:260px">${(a.description||'').substring(0,150)}${hit ? ' <span style="font-size:9px;font-weight:700;color:white;background:#1a6e4a;padding:1px 6px;border-radius:10px;vertical-align:middle">WATCHLIST</span>' : ''}</td>
+    ${showType ? `<td><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:${catColors[a.category]||'#f5f2eb;color:#888'}">${catLabel[a.category]||a.category}</span></td>` : ''}
+    <td class="dim" style="font-size:11px;white-space:nowrap">${(a.source||'').substring(0,20)}</td>
+    <td style="white-space:nowrap">
+      <div style="display:flex;gap:4px">
+        <button onclick="addStressToLead(${JSON.stringify(a).replace(/"/g,'&quot;')})" style="font-size:10px;font-weight:700;color:#1a3a9e;background:#e8eeff;border:none;border-radius:12px;padding:3px 8px;cursor:pointer" title="Add as lead">+ Lead</button>
+        <button onclick="addStressToIntent(${JSON.stringify(a).replace(/"/g,'&quot;')})" style="font-size:10px;font-weight:700;color:#1a6e4a;background:#e8f5ee;border:none;border-radius:12px;padding:3px 8px;cursor:pointer" title="Add as intent">+ Signal</button>
+      </div>
+    </td>
+  </tr>`;
+}
+
+// ── Add to M&A from Stress ──
+function addStressToLead(a) {
+  // Extract company name from title (first meaningful noun phrase)
+  const co = a.title.split(/[-–:,|]/)[0].trim().substring(0, 60) || 'Unknown';
+  const today = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
+  const lead = { n: LEADS.length+1, co, type: 'Sell', status: 'Open', size: '', lead: 'Zeenath', contact: '', next: 'Initial outreach — credit event: ' + a.title.substring(0,80), date: today };
+  LEADS.push(lead);
+  renderLeads(LEADS);
+  renderLeadPreview();
+  document.getElementById('nc-leads').textContent = LEADS.length;
+  document.getElementById('s-leads').textContent = LEADS.filter(l=>l.status==='Open').length;
+  writeLeadToOneDrive({ company: co, type: 'Sell', status: 'Open', size: '', lead: 'Zeenath', contact: '', next: lead.next, date: today });
+  // Visual feedback
+  event.target.textContent = '✓ Added';
+  event.target.style.background = '#1a6e4a';
+  event.target.style.color = 'white';
+  setTimeout(() => { event.target.textContent = '+ Lead'; event.target.style.background = '#e8eeff'; event.target.style.color = '#1a3a9e'; }, 2000);
+}
+
+function addStressToIntent(a) {
+  const co = a.title.split(/[-–:,|]/)[0].trim().substring(0, 60) || 'Unknown';
+  const today = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
+  const signal = { date: today, co, sector: '', range: '', source: a.source || 'Credeye', contact: '', intent: a.title + (a.description ? ' — ' + a.description.substring(0,100) : '') };
+  INTENT.unshift(signal);
+  renderIntent(INTENT);
+  renderIntentPreview();
+  document.getElementById('nc-intent').textContent = INTENT.length;
+  document.getElementById('s-intent').textContent = INTENT.length;
+  writeIntentToOneDrive({ company: co, date: today, sector: '', range: '', source: signal.source, contact: '', intent: signal.intent });
+  event.target.textContent = '✓ Added';
+  event.target.style.background = '#1a6e4a';
+  event.target.style.color = 'white';
+  setTimeout(() => { event.target.textContent = '+ Signal'; event.target.style.background = '#e8f5ee'; event.target.style.color = '#1a6e4a'; }, 2000);
+}
+
+// ── Filter stress views ──
+function filterStressView(type) {
+  const inputMap = { downgrades: 'down-search', stress: 'debt-search', expansion: 'exp-search' };
+  const bodyMap = { downgrades: 'stress-downgrades-body', stress: 'stress-debt-body', expansion: 'stress-expansion-body' };
+  const countMap = { downgrades: 'down-count', stress: 'debt-count', expansion: 'exp-count' };
+  const q = (document.getElementById(inputMap[type])?.value || '').toLowerCase();
+  if (!STRESS_DATA) return;
+  const data = (STRESS_DATA[type] || []).filter(a =>
+    !q || a.title.toLowerCase().includes(q) || (a.description||'').toLowerCase().includes(q) || (a.source||'').toLowerCase().includes(q)
+  );
+  document.getElementById(countMap[type]).textContent = data.length + ' records';
+  document.getElementById(bodyMap[type]).innerHTML = data.map(a => renderStressRow(a, false)).join('') ||
+    '<tr><td colspan="5" style="padding:20px;text-align:center;color:#aaa">No records found.</td></tr>';
+}
+
+// ── Render all stress views after scan ──
+function renderAllStressViews() {
+  if (!STRESS_DATA) return;
+
+  // Stats
+  const ds = STRESS_DATA.downgrades||[], ss = STRESS_DATA.stress||[], es = STRESS_DATA.expansion||[], us = STRESS_DATA.upgrades||[];
+  document.getElementById('s-crede-down').textContent = ds.length;
+  document.getElementById('s-crede-stress').textContent = ss.length;
+  document.getElementById('s-crede-expand').textContent = es.length;
+  document.getElementById('s-crede-up').textContent = us.length;
+  document.getElementById('nc-downgrades').textContent = ds.length;
+  document.getElementById('nc-stress').textContent = ss.length;
+  document.getElementById('nc-expansion').textContent = es.length;
+
+  // Overview grid
+  const all = [...ds,...ss,...es,...us].sort((a,b) => new Date(b.date)-new Date(a.date));
+  const watchHits = all.filter(a => isStressWatchlistHit(a));
+  const oc = document.getElementById('stress-overview-content');
+  if (oc) oc.innerHTML = `
+    ${watchHits.length ? `
+      <div style="margin-bottom:24px">
+        <div class="section-title" style="color:#1a6e4a">🎯 Watchlist hits (${watchHits.length})</div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Date</th><th>Company / Signal</th><th>Detail</th><th>Type</th><th>Source</th><th>Action</th></tr></thead>
+          <tbody>${watchHits.map(a => renderStressRow(a, true)).join('')}</tbody>
+        </table></div>
+      </div>` : ''}
+    <div class="two-col" style="margin-bottom:20px">
+      <div>
+        <div class="section-title" style="color:#c0392b">⬇ Latest downgrades (${ds.length})</div>
+        <div class="tbl-wrap" style="max-height:340px;overflow-y:auto"><table>
+          <thead><tr><th>Date</th><th>Signal</th><th>Detail</th><th>Source</th><th>Action</th></tr></thead>
+          <tbody>${ds.slice(0,8).map(a => renderStressRow(a, false)).join('') || '<tr><td colspan="5" style="padding:20px;text-align:center;color:#aaa">No downgrade signals</td></tr>'}</tbody>
+        </table></div>
+      </div>
+      <div>
+        <div class="section-title" style="color:#d68910">⚠ Debt stress (${ss.length})</div>
+        <div class="tbl-wrap" style="max-height:340px;overflow-y:auto"><table>
+          <thead><tr><th>Date</th><th>Signal</th><th>Detail</th><th>Source</th><th>Action</th></tr></thead>
+          <tbody>${ss.slice(0,8).map(a => renderStressRow(a, false)).join('') || '<tr><td colspan="5" style="padding:20px;text-align:center;color:#aaa">No stress signals</td></tr>'}</tbody>
+        </table></div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div>
+        <div class="section-title" style="color:#1a6e4a">↗ Expansion signals (${es.length})</div>
+        <div class="tbl-wrap" style="max-height:280px;overflow-y:auto"><table>
+          <thead><tr><th>Date</th><th>Signal</th><th>Detail</th><th>Source</th><th>Action</th></tr></thead>
+          <tbody>${es.slice(0,6).map(a => renderStressRow(a, false)).join('') || '<tr><td colspan="5" style="padding:20px;text-align:center;color:#aaa">No expansion signals</td></tr>'}</tbody>
+        </table></div>
+      </div>
+      <div>
+        <div class="section-title">⬆ Upgrades (${us.length})</div>
+        <div class="tbl-wrap" style="max-height:280px;overflow-y:auto"><table>
+          <thead><tr><th>Date</th><th>Signal</th><th>Detail</th><th>Source</th><th>Action</th></tr></thead>
+          <tbody>${us.slice(0,6).map(a => renderStressRow(a, false)).join('') || '<tr><td colspan="5" style="padding:20px;text-align:center;color:#aaa">No upgrade signals</td></tr>'}</tbody>
+        </table></div>
+      </div>
+    </div>
+    <div style="margin-top:16px;font-size:11px;color:#bbb;text-align:center">
+      Credeye · ${STRESS_DATA.total} signals · Sources: ICRA, CRISIL, CARE, India Ratings via live news · ${new Date(STRESS_DATA.fetched_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}
+    </div>`;
+
+  // Individual views tables
+  ['downgrades','stress','expansion'].forEach(type => {
+    const bodyMap = { downgrades:'stress-downgrades-body', stress:'stress-debt-body', expansion:'stress-expansion-body' };
+    const countMap = { downgrades:'down-count', stress:'debt-count', expansion:'exp-count' };
+    const data = STRESS_DATA[type] || [];
+    const el = document.getElementById(bodyMap[type]);
+    const ce = document.getElementById(countMap[type]);
+    if (el) el.innerHTML = data.map(a => renderStressRow(a, false)).join('') || '<tr><td colspan="5" style="padding:20px;text-align:center;color:#aaa">No signals found.</td></tr>';
+    if (ce) ce.textContent = data.length + ' records';
+  });
+
+  renderStressWatchlistView();
+  document.getElementById('stress-refresh-label').textContent = 'Scanned ' + new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ── Main scan function ──
+async function runCredeye() {
+  const btn = document.getElementById('credeye-scan-btn');
+  const oc = document.getElementById('stress-overview-content');
+  if (btn) { btn.textContent = '⚡ Scanning...'; btn.style.opacity = '0.6'; btn.disabled = true; }
+  if (oc) oc.innerHTML = '<div style="padding:40px;display:flex;align-items:center;gap:12px;color:#1a6e4a;font-size:14px;font-weight:500"><div class="spin"></div>Scanning ICRA, CRISIL, CARE, India Ratings actions via live news feeds...</div>';
+
+  try {
+    const r = await fetch('/api/credeye');
+    if (!r.ok) throw new Error('API ' + r.status + ' — make sure api/credeye.js is deployed');
+    STRESS_DATA = await r.json();
+    renderAllStressViews();
+  } catch(e) {
+    if (oc) oc.innerHTML = `<div style="padding:40px;color:#e53935;font-size:14px">Scan failed: ${e.message}</div>`;
+    console.error('Credeye error:', e);
+  }
+
+  if (btn) { btn.textContent = '⚡ Scan now'; btn.style.opacity = '1'; btn.disabled = false; }
+}
+
+// Init watchlist on load
+setTimeout(() => { renderStressWatchlistPills(); }, 200);
 
 // ── INIT ──
 checkExistingSession();
