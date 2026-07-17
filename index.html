@@ -900,7 +900,16 @@ tr { transition: background 0.1s; }
           <span class="nav-count" id="nc-form2">—</span>
         </button>
       </div>
-      <div class="sidebar-footer">IBBI data refreshed live</div>
+      <hr class="nav-sep">
+      <div class="nav-group">
+        <div class="nav-label">Credit Intelligence</div>
+        <button class="nav-btn" onclick="show('credeye',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          Credeye
+          <span class="nav-count" id="nc-credeye">—</span>
+        </button>
+      </div>
+      <div class="sidebar-footer">IBBI + credit data live</div>
     </nav>
 
     <main class="content">
@@ -1284,7 +1293,53 @@ tr { transition: background 0.1s; }
         </table></div>
       </div>
 
+      <!-- CREDEYE — Credit Intelligence -->
+      <div id="view-credeye" class="view">
+        <div class="page-hdr">
+          <div>
+            <div class="page-title" style="display:flex;align-items:center;gap:10px">
+              <span>Credeye</span>
+              <span style="font-size:13px;font-weight:500;color:#1a6e4a;background:#e8f5ee;padding:3px 10px;border-radius:20px;font-family:var(--sans)">Credit Intelligence</span>
+            </div>
+            <div class="page-sub">Rating downgrades · Debt stress · Expansion signals · from ICRA, CRISIL, CARE via live news</div>
+          </div>
+          <div class="page-actions">
+            <button class="add-btn outline" onclick="openCredeye()" id="credeye-refresh-btn">⚡ Scan credit news</button>
+          </div>
+        </div>
+
+        <!-- Watchlist -->
+        <div style="background:#f8f8f6;border:1.5px solid #e8e4dc;border-radius:12px;padding:16px 20px;margin-bottom:24px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <span style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.1em">Watchlist — companies to monitor</span>
+            <button onclick="addToWatchlist()" style="font-size:11px;font-weight:600;color:#1a6e4a;background:none;border:none;cursor:pointer">+ Add company</button>
+          </div>
+          <div id="credeye-watchlist" style="display:flex;gap:8px;flex-wrap:wrap">
+            <span style="font-size:12px;color:#aaa;font-style:italic">No companies on watchlist yet — add companies to monitor their credit events</span>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats" id="credeye-stats" style="margin-bottom:24px">
+          <div class="stat"><div class="stat-label">Downgrades</div><div class="stat-val red" id="s-downgrades">—</div><div class="stat-sub">last 4 days</div></div>
+          <div class="stat"><div class="stat-label">Debt stress signals</div><div class="stat-val amber" id="s-stress">—</div><div class="stat-sub">NPA, NCLT, OTS</div></div>
+          <div class="stat"><div class="stat-label">Expansion plans</div><div class="stat-val green" id="s-expansion">—</div><div class="stat-sub">capex & growth</div></div>
+          <div class="stat"><div class="stat-label">Upgrades</div><div class="stat-val" id="s-upgrades">—</div><div class="stat-sub">positive momentum</div></div>
+          <div class="stat"><div class="stat-label">Watchlist hits</div><div class="stat-val" id="s-watchlist-hits" style="color:#1a6e4a">—</div><div class="stat-sub">your companies</div></div>
+        </div>
+
+        <!-- Content -->
+        <div id="credeye-content">
+          <div style="text-align:center;padding:60px;color:#aaa">
+            <div style="font-size:32px;margin-bottom:16px">👁</div>
+            <div style="font-size:15px;font-weight:500;color:#888;margin-bottom:8px">Credeye is ready</div>
+            <div style="font-size:13px">Click "Scan credit news" to pull the latest downgrades, debt stress signals and expansion announcements from across Indian business news.</div>
+          </div>
+        </div>
+      </div>
+
       <!-- FORM 2 -->
+      <div id="view-insol-form2" class="view">      <!-- FORM 2 -->
       <div id="view-insol-form2" class="view">
         <div class="page-hdr">
           <div><div class="page-title">Form 2 — Consents</div><div class="page-sub">Mandates where we have given consent to act</div></div>
@@ -2139,6 +2194,7 @@ function show(view, el) {
   document.getElementById('view-'+view).classList.add('active');
   if (el) el.classList.add('active');
   // Auto-load IBBI data when navigating to insolvency views
+  if (view === 'credeye' && !CREDEYE_DATA) { openCredeye(); }
   if (['insol-overview','insol-forma','insol-formg'].includes(view) && !window._ibbiLoaded) {
     refreshIBBI();
   }
@@ -3484,6 +3540,163 @@ function openInsolTaskModal() {
   }, 50);
 }
 
+
+
+// ── CREDEYE — Credit Intelligence ──
+let CREDEYE_DATA = null;
+let WATCHLIST = JSON.parse(localStorage.getItem('credeye_watchlist') || '[]');
+
+function renderWatchlist() {
+  const el = document.getElementById('credeye-watchlist');
+  if (!el) return;
+  if (!WATCHLIST.length) {
+    el.innerHTML = '<span style="font-size:12px;color:#aaa;font-style:italic">No companies on watchlist yet</span>';
+    return;
+  }
+  el.innerHTML = WATCHLIST.map((co, i) => `
+    <span style="display:inline-flex;align-items:center;gap:6px;background:white;border:1.5px solid #e8e4dc;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;color:#0a2a18">
+      ${co}
+      <button onclick="removeFromWatchlist(${i})" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:13px;line-height:1;padding:0">×</button>
+    </span>`).join('');
+}
+
+function addToWatchlist() {
+  const co = prompt('Enter company name to monitor:');
+  if (!co || !co.trim()) return;
+  WATCHLIST.push(co.trim());
+  localStorage.setItem('credeye_watchlist', JSON.stringify(WATCHLIST));
+  renderWatchlist();
+  if (CREDEYE_DATA) highlightWatchlistHits();
+}
+
+function removeFromWatchlist(idx) {
+  WATCHLIST.splice(idx, 1);
+  localStorage.setItem('credeye_watchlist', JSON.stringify(WATCHLIST));
+  renderWatchlist();
+  if (CREDEYE_DATA) highlightWatchlistHits();
+}
+
+function highlightWatchlistHits() {
+  if (!CREDEYE_DATA || !WATCHLIST.length) {
+    document.getElementById('s-watchlist-hits').textContent = '0';
+    return;
+  }
+  const allArticles = [
+    ...(CREDEYE_DATA.downgrades || []),
+    ...(CREDEYE_DATA.stress || []),
+    ...(CREDEYE_DATA.expansion || []),
+    ...(CREDEYE_DATA.upgrades || [])
+  ];
+  const hits = allArticles.filter(a =>
+    WATCHLIST.some(co => a.title.toLowerCase().includes(co.toLowerCase()) || (a.description||'').toLowerCase().includes(co.toLowerCase()))
+  ).length;
+  document.getElementById('s-watchlist-hits').textContent = hits;
+}
+
+function fmtCredeDate(iso) {
+  try {
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = Math.floor((now - d) / 3600000);
+    if (diff < 24) return diff + 'h ago';
+    if (diff < 48) return 'Yesterday';
+    return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+  } catch { return ''; }
+}
+
+function isWatchlistHit(article) {
+  return WATCHLIST.some(co =>
+    article.title.toLowerCase().includes(co.toLowerCase()) ||
+    (article.description||'').toLowerCase().includes(co.toLowerCase())
+  );
+}
+
+function renderCredeyeSection(articles, emptyMsg) {
+  if (!articles || !articles.length) return `<div style="padding:16px;color:#aaa;font-size:13px;text-align:center">${emptyMsg}</div>`;
+  return articles.map(a => {
+    const hit = isWatchlistHit(a);
+    return `<div style="padding:14px 18px;border-bottom:1px solid #f5f2ec;transition:all 0.15s;${hit ? 'background:#f0faf5;border-left:3px solid #1a6e4a;' : ''}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px">
+        <div style="font-size:13px;font-weight:600;color:#0a0a0a;line-height:1.4;flex:1">${a.title}${hit ? ' <span style="font-size:10px;font-weight:700;color:white;background:#1a6e4a;padding:1px 7px;border-radius:20px;margin-left:4px">WATCHLIST</span>' : ''}</div>
+        <span style="font-size:10px;color:#aaa;white-space:nowrap;margin-top:2px">${fmtCredeDate(a.date)}</span>
+      </div>
+      ${a.description ? `<div style="font-size:12px;color:#666;line-height:1.5">${a.description.substring(0,200)}</div>` : ''}
+      <div style="font-size:10px;color:#bbb;margin-top:6px;font-weight:500">${a.source}</div>
+    </div>`;
+  }).join('');
+}
+
+async function openCredeye() {
+  const btn = document.getElementById('credeye-refresh-btn');
+  const contentEl = document.getElementById('credeye-content');
+  if (btn) { btn.textContent = '⚡ Scanning...'; btn.style.opacity = '0.6'; }
+  contentEl.innerHTML = '<div style="padding:40px;display:flex;align-items:center;gap:12px;color:#1a6e4a;font-size:14px;font-weight:500"><div class="spin"></div>Scanning ICRA, CRISIL, CARE actions via live news feeds...</div>';
+
+  try {
+    const r = await fetch('/api/credeye');
+    if (!r.ok) throw new Error('API returned ' + r.status);
+    CREDEYE_DATA = await r.json();
+
+    // Update stats
+    document.getElementById('s-downgrades').textContent = CREDEYE_DATA.downgrades?.length || 0;
+    document.getElementById('s-stress').textContent = CREDEYE_DATA.stress?.length || 0;
+    document.getElementById('s-expansion').textContent = CREDEYE_DATA.expansion?.length || 0;
+    document.getElementById('s-upgrades').textContent = CREDEYE_DATA.upgrades?.length || 0;
+    document.getElementById('nc-credeye').textContent = CREDEYE_DATA.total || 0;
+    highlightWatchlistHits();
+
+    // Render sections
+    contentEl.innerHTML = `
+      <!-- Watchlist hits first if any -->
+      ${WATCHLIST.length && CREDEYE_DATA ? (() => {
+        const allA = [...(CREDEYE_DATA.downgrades||[]),...(CREDEYE_DATA.stress||[]),...(CREDEYE_DATA.expansion||[]),...(CREDEYE_DATA.upgrades||[])];
+        const hits = allA.filter(a => isWatchlistHit(a));
+        return hits.length ? `
+          <div style="margin-bottom:24px">
+            <div class="section-title" style="color:#1a6e4a;display:flex;align-items:center;gap:6px">
+              <span style="width:8px;height:8px;background:#1a6e4a;border-radius:50%;display:inline-block"></span>
+              Watchlist hits (${hits.length})
+            </div>
+            <div class="card-box">${renderCredeyeSection(hits, 'No watchlist hits')}</div>
+          </div>` : '';
+      })() : ''}
+
+      <div class="two-col" style="margin-bottom:24px">
+        <div>
+          <div class="section-title" style="color:#c0392b">⬇ Rating downgrades (${CREDEYE_DATA.downgrades?.length||0})</div>
+          <div class="card-box">${renderCredeyeSection(CREDEYE_DATA.downgrades, 'No downgrade signals found')}</div>
+        </div>
+        <div>
+          <div class="section-title" style="color:#d68910">⚠ Debt stress & NPA (${CREDEYE_DATA.stress?.length||0})</div>
+          <div class="card-box">${renderCredeyeSection(CREDEYE_DATA.stress, 'No stress signals found')}</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <div class="section-title" style="color:#1a6e4a">↗ Expansion & capex (${CREDEYE_DATA.expansion?.length||0})</div>
+          <div class="card-box">${renderCredeyeSection(CREDEYE_DATA.expansion, 'No expansion signals found')}</div>
+        </div>
+        <div>
+          <div class="section-title">⬆ Rating upgrades (${CREDEYE_DATA.upgrades?.length||0})</div>
+          <div class="card-box">${renderCredeyeSection(CREDEYE_DATA.upgrades, 'No upgrade signals found')}</div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;font-size:11px;color:#bbb;text-align:center">
+        Credeye · ${CREDEYE_DATA.total} signals · Sources: ICRA, CRISIL, CARE, India Ratings via Google News · Updated ${new Date(CREDEYE_DATA.fetched_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}
+      </div>`;
+
+  } catch(e) {
+    contentEl.innerHTML = `<div style="padding:40px;color:#e53935;font-size:14px">Scan failed: ${e.message}. Make sure api/credeye.js is deployed.</div>`;
+    console.error('Credeye error:', e);
+  }
+
+  if (btn) { btn.textContent = '⚡ Scan credit news'; btn.style.opacity = '1'; }
+}
+
+// Auto-render watchlist on load
+setTimeout(renderWatchlist, 100);
 
 // ── INIT ──
 checkExistingSession();
