@@ -230,6 +230,7 @@ body::after {
 .av-L { background: #fee2e2; color: #991b1b; }
 .av-N { background: #fce7f3; color: #9d174d; }
 .av-D { background: #fef3c7; color: #92400e; }
+.av-Ra { background: #fce7f3; color: #9d174d; }
 .av-x { background: var(--cream); color: var(--ink-4); }
 .task-name { font-size: 14px; font-weight: 500; color: var(--ink); line-height: 1.4; }
 .task-meta { font-size: 12px; color: var(--ink-4); margin-top: 3px; }
@@ -1075,7 +1076,7 @@ tr { transition: background 0.1s; }
           <div class="page-actions"><button class="add-btn" onclick="openModal('task')">+ Add task</button></div>
         </div>
         <div class="filter-bar">
-          <select id="t-owner" onchange="filterTasks()"><option value="">All people</option><option>Zeenath</option><option>Ashish</option><option>Yohaanne</option><option>Libin</option><option>Nandita</option><option>Disha</option></select>
+          <select id="t-owner" onchange="filterTasks()"><option value="">All people</option><option>Zeenath</option><option>Ashish</option><option>Yohaanne</option><option>Libin</option><option>Nandita</option><option>Disha</option><option>Rashi</option></select>
           <select id="t-status" onchange="filterTasks()"><option value="">All statuses</option><option value="progress">In progress</option><option value="not started">Not started</option><option value="completed">Completed</option><option value="blocked">Blocked</option></select>
           <select id="t-project" onchange="filterTasks()"><option value="">All projects</option></select>
           <input id="t-search" placeholder="Search task..." oninput="filterTasks()">
@@ -1100,7 +1101,7 @@ tr { transition: background 0.1s; }
         <div class="filter-bar">
           <select id="l-status" onchange="filterLeads()"><option value="">All statuses</option><option>Open</option><option>Closed</option><option>On Hold</option></select>
           <select id="l-type" onchange="filterLeads()"><option value="">All types</option><option>Buy</option><option>Sell</option></select>
-          <select id="l-owner" onchange="filterLeads()"><option value="">All owners</option><option>Zeenath</option><option>Ashish</option><option>Yohaanne</option><option>Libin</option><option>Nandita</option><option>Disha</option></select>
+          <select id="l-owner" onchange="filterLeads()"><option value="">All owners</option><option>Zeenath</option><option>Ashish</option><option>Yohaanne</option><option>Libin</option><option>Nandita</option><option>Disha</option><option>Rashi</option></select>
           <select id="l-sort" onchange="filterLeads()">
             <option value="recent">Recently added</option>
             <option value="az">A→Z</option>
@@ -1274,7 +1275,7 @@ tr { transition: background 0.1s; }
           <div class="page-actions"><button class="add-btn" onclick="openInsolTaskModal()">+ Add Insol task</button></div>
         </div>
         <div class="filter-bar">
-          <select id="it-owner" onchange="filterInsolTasks()"><option value="">All people</option><option>Zeenath</option><option>Ashish</option><option>Yohaanne</option><option>Libin</option><option>Nandita</option><option>Disha</option></select>
+          <select id="it-owner" onchange="filterInsolTasks()"><option value="">All people</option><option>Zeenath</option><option>Ashish</option><option>Yohaanne</option><option>Libin</option><option>Nandita</option><option>Disha</option><option>Rashi</option></select>
           <select id="it-status" onchange="filterInsolTasks()"><option value="">All statuses</option><option value="progress">In progress</option><option value="not started">Not started</option><option value="completed">Completed</option><option value="blocked">Blocked</option></select>
           <input id="it-search" placeholder="Search task or mandate..." oninput="filterInsolTasks()">
           <span class="filter-count" id="itc-label">— tasks</span>
@@ -1523,6 +1524,7 @@ tr { transition: background 0.1s; }
           <select id="m-task-owner">
             <option>Zeenath</option><option>Ashish</option><option>Yohaanne</option>
             <option>Libin</option><option>Nandita</option><option>Disha</option>
+            <option>Rashi</option>
           </select>
         </div>
         <div><label>Project</label>
@@ -1561,6 +1563,7 @@ tr { transition: background 0.1s; }
           <select id="m-lead-owner">
             <option>Zeenath</option><option>Ashish</option><option>Yohaanne</option>
             <option>Libin</option><option>Nandita</option><option>Disha</option>
+            <option>Rashi</option>
           </select>
         </div>
         <div><label>Contact</label><input id="m-lead-contact" placeholder="Name (Title)"></div>
@@ -1882,6 +1885,7 @@ function dueBadge(due, status) {
 function avClass(name) {
   if (!name) return 'av-x';
   const n = String(name)[0].toUpperCase();
+  if (n === 'R' && name && name.toLowerCase().startsWith('ra')) return 'av-Ra';
   return ['Z','A','R','Y','L','N','D'].includes(n) ? 'av-' + n : 'av-x';
 }
 
@@ -2310,6 +2314,7 @@ function buildPeople() {
     Zeenath:{role:'Partner',cls:'av-Z',tasks:0,leads:0,open:0},
     Ashish:{role:'Founding Partner',cls:'av-A',tasks:0,leads:0,open:0},
     Disha:{role:'Associate',cls:'av-D',tasks:0,leads:0,open:0},
+    Rashi:{role:'Associate',cls:'av-Ra',tasks:0,leads:0,open:0},
     Yohaanne:{role:'Team',cls:'av-Y',tasks:0,leads:0,open:0},
     Libin:{role:'Team',cls:'av-L',tasks:0,leads:0,open:0},
     Nandita:{role:'Team',cls:'av-N',tasks:0,leads:0,open:0}
@@ -2320,6 +2325,7 @@ function buildPeople() {
   };
   const fgMap = {
     'av-Z':'#1e40af','av-A':'#065f46','av-D':'#92400e',
+    'av-Ra':'#9d174d',
     'av-Y':'#5b21b6','av-L':'#991b1b','av-N':'#9d174d'
   };
   TASKS.forEach(t => { Object.keys(people).forEach(p => { if((t.Name||'').toLowerCase().includes(p.toLowerCase())) people[p].tasks++; }); });
@@ -2392,7 +2398,7 @@ async function send() {
     + 'LEADS (' + LEADS.length + '):\n' + leadCtx + '\n\n'
     + 'INTENT (' + INTENT.length + '):\n' + intentCtx + '\n\n'
     + 'TASKS (' + TASKS.length + '):\n' + taskCtx + '\n\n'
-    + 'TEAM: Zeenath (Partner), Ashish (Founding Partner), Yohaanne, Libin, Nandita, Disha.\n\n'
+    + 'TEAM: Zeenath (Partner), Ashish (Founding Partner), Yohaanne, Libin, Nandita, Disha, Rashi.\n\n'
     + 'KEY MATCHES: Saatvik Green\u2194India Circuits, Rainmatter\u2194Antlia Fintech, Aster DM\u2194hospital leads.\n\n'
     + 'CRITICAL LOGGING RULES:\n'
     + 'When the user wants to add/log/create anything, respond with ONLY a JSON block followed by a brief confirmation.\n'
