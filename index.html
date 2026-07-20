@@ -2946,7 +2946,7 @@ async function scanNewsForSignals() {
   btn.textContent = '⚡ Scanning...';
   btn.classList.add('scanning');
   bar.style.display = 'block';
-  inner.innerHTML = '<div class="intel-scanning"><div class="spin"></div>Pulling fresh headlines from ET, Mint, Business Standard, VCCircle, Inc42...</div>';
+  inner.innerHTML = '<div class="intel-scanning"><div class="spin"></div>Pulling headlines from 60 sources — ET, Mint, BS, VCCircle, Inc42, Bloomberg, Investing.com...</div>';
 
   try {
     // ── STEP 1: Fetch RSS headlines (free, via our proxy) ──
@@ -2970,43 +2970,34 @@ async function scanNewsForSignals() {
     const today = new Date().toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
 
     // Format headlines as compact text
-    const headlineText = articles.map((a,i) =>
-      `[${i+1}] ${a.source} | ${new Date(a.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})} | ${a.title}${a.description ? ' — ' + a.description.substring(0,120) : ''}`
+    const headlineText = articles.slice(0,200).map((a,i) =>
+      `[${i+1}] ${a.source} | ${new Date(a.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})} | ${a.title}${a.description ? ' — ' + a.description.substring(0,100) : ''}`
     ).join('\n');
 
-    const prompt = `Today is ${today}. You are scanning Indian business news for Accomplir Advisors, a Mumbai boutique M&A bank.
+    const prompt = `Today is ${today}. You are scanning Indian M&A intelligence for Accomplir Advisors, a Mumbai boutique M&A bank.
 
-OUR EXISTING LEADS: ${existingLeads.substring(0,600)}
-EXISTING INTENT SIGNALS: ${existingCos.substring(0,400)}
+OUR PIPELINE (match signals against these):
+Leads: ${existingLeads.substring(0,500)}
+Existing signals: ${existingCos.substring(0,300)}
 
-Below are ${articles.length} fresh headlines from the last 72 hours from ET, Mint, Business Standard, VCCircle, Inc42:
+You have ${articles.length} headlines from 14 direct feeds + 46 targeted searches (ET, Mint, BS, VCCircle, Inc42, Bloomberg, Investing.com and more).
 
+HEADLINES:
 ${headlineText}
 
-Analyse these headlines and extract 6-9 M&A intent signals. Look for:
-- Companies announcing acquisitions, looking to buy, "in talks", "exploring options"
-- PE/VC firms announcing new funds or deployment mandates
-- Companies with excess capital or capex plans that signal M&A appetite
-- Sector consolidation trends (hospitals, hotels, FMCG, industrials, fintech, EV)
-- Fundraises where the money will be used for acquisitions
-- Earnings/investor calls mentioning inorganic growth
+Extract EVERY M&A signal — be exhaustive, not selective. Include:
+1. All completed acquisitions and announced deals
+2. All PE/VC investments, buyouts, secondary sales
+3. All fundraises where capital will be deployed for acquisitions
+4. All sector consolidation moves even without named acquirer
+5. All strategic partnerships that signal M&A intent
+6. All cross-border deals involving Indian companies
+7. Companies explicitly saying they want to acquire (any sector)
+8. PE/VC funds announcing new mandates or deployment focus
 
-IMPORTANT: Also flag signals where sector trends (not just direct M&A news) suggest acquisition appetite. E.g. "Hospital sector seeing capacity crunch" = hospitals looking to acquire.
-
-Return ONLY a valid JSON array, no markdown, no explanation:
-[
-  {
-    "company": "Company name",
-    "sector": "Sector",
-    "intent": "Specific what they want — geography, size, type of asset, be precise",
-    "range": "Deal size if mentioned",
-    "source": "ET/Mint/BS/VCCircle/Inc42",
-    "date": "${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-')}",
-    "match": "Name of our lead or intent signal this could match, or empty string",
-    "age": "today/yesterday/recent",
-    "headline_ref": "Brief quote from the headline this came from"
-  }
-]`;
+Return 8-12 signals. For each, flag if it matches our pipeline.
+Return ONLY a JSON array, no markdown:
+[{"company":"Name","sector":"Sector","intent":"Precise what/where/size","range":"Xcr or USD","source":"Publication","date":"DD-Mon-YY","match":"our lead/signal name or empty","age":"today/yesterday/recent","headline_ref":"brief headline quote"}]`;
 
     const r = await fetch('/api/chat', {
       method: 'POST',
@@ -3029,7 +3020,7 @@ Return ONLY a valid JSON array, no markdown, no explanation:
     } catch(e) { console.warn('Parse error:', e); }
 
     if (!signals.length) {
-      inner.innerHTML = `<div style="padding:20px;color:#aaa;font-size:13px">No strong M&A signals found in today's ${articles.length} headlines. Try again later.</div>`;
+      inner.innerHTML = `<div style="padding:20px;color:#aaa;font-size:13px">No strong M&A signals found in today ${articles.length} headlines. Try again later.</div>`;
       btn.textContent = '⚡ Scan news'; btn.classList.remove('scanning'); return;
     }
 
@@ -4143,7 +4134,8 @@ async function runCredeye() {
   if (btn) {
     const lastScan = localStorage.getItem('credeye_last_scan');
     const ago = lastScan ? Math.round((Date.now() - parseInt(lastScan)) / 60000) : null;
-    btn.textContent = ago !== null ? `⚡ Scanned ${ago < 60 ? ago + 'm ago' : Math.round(ago/60) + 'h ago'}` : '⚡ Scan now';
+    const agoText = ago !== null ? (ago < 60 ? ago + 'm ago' : Math.round(ago/60) + 'h ago') : null;
+    btn.textContent = agoText ? '⚡ Scanned ' + agoText : '⚡ Scan now';
     btn.style.opacity = '1';
     btn.disabled = false;
   }
