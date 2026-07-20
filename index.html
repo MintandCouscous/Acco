@@ -1708,8 +1708,8 @@ async function getExcelRows(driveId, itemId) {
   if (!usedRange || !usedRange.values || usedRange.values.length < 2) return [];
   const rowCount = usedRange.rowCount || usedRange.values.length;
   const colCount = usedRange.columnCount || usedRange.values[0].length;
-  // Read with 20-row buffer to catch rows written since last cache update
-  const endRow = rowCount + 20;
+  // Read with 40-row buffer to catch rows written since last cache update (Excel Online can lag)
+  const endRow = rowCount + 40;
   const endCol = String.fromCharCode(64 + Math.min(colCount, 26));
   const range = await graphFetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/workbook/worksheets('${encodeURIComponent(sheetName)}')/range(address='A1:${endCol}${endRow}')`);
   if (!range || !range.values || range.values.length < 2) return [];
@@ -2611,14 +2611,30 @@ async function writeIntentToOneDrive(i) {
     if (!sheetName) { console.error('writeIntent: No sheet name:', JSON.stringify(ws)); return; }
     console.log('writeIntent: Sheet name:', sheetName);
 
-    // Step 3: Use the row number reserved synchronously at function start
-    const rowNum = reservedRow;
-    console.log('writeIntent: Writing to row', rowNum);
+    // Step 3: Find actual last non-empty row across ALL columns (A:Q)
+    // Scanning only column D missed rows where D was blank but other columns had data
+    const fullRangeResp = await fetch(
+      `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/range(address='A1:Q200')`,
+      { headers: { Authorization: `Bearer ${TOKEN}`, 'workbook-session-id': sessionId } }
+    );
+    const fullRange = await fullRangeResp.json();
+    let lastNonEmptyRow = 4;
+    if (fullRange && fullRange.values) {
+      for (let r = fullRange.values.length - 1; r >= 0; r--) {
+        const hasContent = fullRange.values[r].some(cell => cell !== null && cell !== undefined && String(cell).trim() !== '');
+        if (hasContent) { lastNonEmptyRow = r + 1; break; }
+      }
+    }
+    const rowNum = Math.max(reservedRow, lastNonEmptyRow + 1);
+    if (rowNum >= NEXT_INTENT_ROW) NEXT_INTENT_ROW = rowNum + 1;
+    console.log('writeIntent: Last non-empty row (all cols):', lastNonEmptyRow, '→ row', rowNum);
 
     // Step 4: Write the row
+    // S.no = rowNum minus 3 header rows (row 1=last updated, row 2=Column headers, row 3=real headers, data starts row 4)
+    const sno = String(rowNum - 3);
     const values = [[
-      String(INTENT.length),
-      i.date || new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),
+      sno,
+      i.date || new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-'),
       i.source || '',
       i.company || '',
       '', '',
