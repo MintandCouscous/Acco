@@ -809,7 +809,7 @@ tr { transition: background 0.1s; }
       <div class="workspace-toggle">
         <button class="ws-btn active" id="ws-ma" onclick="switchWorkspace('ma')">M&amp;A</button>
         <button class="ws-btn" id="ws-insol" onclick="switchWorkspace('insol')">Insolvency</button>
-        <button class="ws-btn" id="ws-stress" onclick="switchWorkspace('stress')">Stress</button>
+        <button class="ws-btn" id="ws-stress" onclick="switchWorkspace('stress')">Credeye</button>
       </div>
     </div>
     <div class="topbar-right">
@@ -2532,7 +2532,24 @@ async function writeLeadToOneDrive(l) {
     ).then(r => r.json());
     const sheetName = ws.value[0].name;
 
-    // Step 3: Use the row number reserved synchronously at function start
+    // Step 3: Find actual last non-empty row by scanning column D (Investor)
+    // This avoids gaps where blank rows cause usedRange to undercount
+    const colDResp = await fetch(
+      `https://graph.microsoft.com/v1.0/drives/${ZEENATH_DRIVE_ID}/items/${INTENT_ITEM_ID}/workbook/worksheets('${encodeURIComponent(sheetName)}')/range(address='D1:D200')`,
+      { headers: { Authorization: `Bearer ${TOKEN}`, 'workbook-session-id': sessionId } }
+    );
+    const colD = await colDResp.json();
+    let lastNonEmptyRow = 4;
+    if (colD && colD.values) {
+      for (let r = colD.values.length - 1; r >= 0; r--) {
+        if (colD.values[r][0] && String(colD.values[r][0]).trim()) {
+          lastNonEmptyRow = r + 1;
+          break;
+        }
+      }
+    }
+    const rowNum = Math.max(reservedRow, lastNonEmptyRow + 1);
+    if (rowNum >= NEXT_INTENT_ROW) NEXT_INTENT_ROW = rowNum + 1;
     const rowNum = reservedLeadRow;
 
     // Step 4: Write row
@@ -4113,17 +4130,46 @@ async function runCredeye() {
     const r = await fetch('/api/credeye');
     if (!r.ok) throw new Error('API ' + r.status + ' — make sure api/credeye.js is deployed');
     STRESS_DATA = await r.json();
+    // Cache results and timestamp
+    try {
+      localStorage.setItem('credeye_cache', JSON.stringify(STRESS_DATA));
+      localStorage.setItem('credeye_last_scan', Date.now().toString());
+    } catch(e) {}
     renderAllStressViews();
   } catch(e) {
     if (oc) oc.innerHTML = `<div style="padding:40px;color:#e53935;font-size:14px">Scan failed: ${e.message}</div>`;
     console.error('Credeye error:', e);
   }
 
-  if (btn) { btn.textContent = '⚡ Scan now'; btn.style.opacity = '1'; btn.disabled = false; }
+  if (btn) {
+    const lastScan = localStorage.getItem('credeye_last_scan');
+    const ago = lastScan ? Math.round((Date.now() - parseInt(lastScan)) / 60000) : null;
+    btn.textContent = ago !== null ? `⚡ Scanned ${ago < 60 ? ago + 'm ago' : Math.round(ago/60) + 'h ago'}` : '⚡ Scan now';
+    btn.style.opacity = '1';
+    btn.disabled = false;
+  }
 }
 
 // Init watchlist on load
-setTimeout(() => { renderStressWatchlistPills(); }, 200);
+setTimeout(() => {
+  renderStressWatchlistPills();
+  // Auto-run Credeye if last scan was >6 hours ago
+  const lastScan = localStorage.getItem('credeye_last_scan');
+  if (lastScan) {
+    const hoursSince = (Date.now() - parseInt(lastScan)) / 3600000;
+    if (hoursSince < 6) {
+      // Try to restore cached data from localStorage
+      const cached = localStorage.getItem('credeye_cache');
+      if (cached) {
+        try {
+          STRESS_DATA = JSON.parse(cached);
+          renderAllStressViews();
+          console.log('Credeye: restored from cache, scanned', Math.round(hoursSince * 10) / 10, 'hours ago');
+        } catch(e) {}
+      }
+    }
+  }
+}, 200);
 
 // ── INIT ──
 checkExistingSession();
