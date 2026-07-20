@@ -2550,7 +2550,6 @@ async function writeLeadToOneDrive(l) {
     }
     const rowNum = Math.max(reservedRow, lastNonEmptyRow + 1);
     if (rowNum >= NEXT_INTENT_ROW) NEXT_INTENT_ROW = rowNum + 1;
-    const rowNum = reservedLeadRow;
 
     // Step 4: Write row
     const values = [[
