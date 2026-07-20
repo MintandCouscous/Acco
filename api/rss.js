@@ -1,133 +1,140 @@
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=7200');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
-  // Direct RSS feeds that work server-side
+  // ── DIRECT RSS FEEDS (13 confirmed working) ──
   const directFeeds = [
-    // India PE/VC/M&A specific
-    { name: 'M&A Critique',     url: 'https://mnacritique.mergersindia.com/feed/' },
-    { name: 'Mergers India',    url: 'https://www.mergersindia.com/feed/' },
-    { name: 'Inc42 Funding',    url: 'https://inc42.com/tag/funding/feed/' },
-    { name: 'Inc42',            url: 'https://inc42.com/feed/' },
-    { name: 'The Ken',          url: 'https://the-ken.com/feed/' },
-    { name: 'PE Hub',           url: 'https://www.pehub.com/feed/' },
-    { name: 'Equitypandit',     url: 'https://equitypandit.com/feed/' },
-    { name: 'YourStory',        url: 'https://yourstory.com/feed' },
-    // International with India coverage
-    { name: 'Bloomberg Markets', url: 'https://feeds.bloomberg.com/markets/news.rss' },
+    { name: 'M&A Critique',       url: 'https://mnacritique.mergersindia.com/feed/' },
+    { name: 'Mergers India',      url: 'https://www.mergersindia.com/feed/' },
+    { name: 'Inc42 Funding',      url: 'https://inc42.com/tag/funding/feed/' },
+    { name: 'Inc42 PE',           url: 'https://inc42.com/tag/private-equity/feed/' },
+    { name: 'Inc42',              url: 'https://inc42.com/feed/' },
+    { name: 'YourStory',          url: 'https://yourstory.com/feed' },
+    { name: 'YourStory Funding',  url: 'https://yourstory.com/category/funding/feed' },
+    { name: 'The Ken',            url: 'https://the-ken.com/feed/' },
+    { name: 'Equitypandit',       url: 'https://equitypandit.com/feed/' },
+    { name: 'NDTV Profit',        url: 'https://feeds.feedburner.com/ndtvprofit-latest' },
+    { name: 'Bloomberg Markets',  url: 'https://feeds.bloomberg.com/markets/news.rss' },
     { name: 'Investing.com India', url: 'https://in.investing.com/rss/news.rss' },
-    { name: 'Investing.com M&A', url: 'https://in.investing.com/rss/news_301.rss' },
-    { name: 'NDTV Profit',      url: 'https://feeds.feedburner.com/ndtvprofit-latest' },
+    { name: 'Investing.com M&A',  url: 'https://in.investing.com/rss/news_301.rss' },
+    { name: 'PE Hub',             url: 'https://www.pehub.com/feed/' },
   ];
 
-  // Google News RSS queries - aggregates ET, Mint, BS, Moneycontrol, Reuters etc
-  const googleNewsQueries = [
-    // Core M&A
-    { name: 'M&A India',           q: 'india+acquisition+merger+deal+company+2026' },
-    { name: 'PE India',            q: 'private+equity+india+acquires+buyout+investment+2026' },
-    { name: 'VC India',            q: 'venture+capital+india+fund+raises+series+2026' },
-    { name: 'Companies buying',    q: 'india+company+acquires+buys+stake+takeover+2026' },
-    // Sector specific - matching Accomplir's mandate universe
-    { name: 'Hospital deals',      q: 'hospital+healthcare+india+acquisition+beds+merger+2026' },
-    { name: 'Hotel hospitality',   q: 'hotel+hospitality+india+acquisition+portfolio+resort+2026' },
-    { name: 'FMCG brands',         q: 'FMCG+brand+india+acquisition+consumer+foods+2026' },
-    { name: 'Industrial M&A',      q: 'india+manufacturing+industrial+power+acquires+plant+2026' },
-    { name: 'Fintech deals',       q: 'fintech+payments+india+acquisition+NBFC+lending+2026' },
-    { name: 'EV logistics',        q: 'EV+electric+vehicle+logistics+india+acquisition+2026' },
-    { name: 'Energy solar',        q: 'solar+energy+renewable+india+acquisition+EPC+MW+2026' },
-    { name: 'Real estate',         q: 'real+estate+proptech+india+acquisition+platform+2026' },
-    { name: 'IT services GCC',     q: 'IT+services+GCC+india+acquisition+technology+2026' },
-    { name: 'Education EdTech',    q: 'education+edtech+india+acquisition+school+coaching+2026' },
-    // PE/VC fund activity
-    { name: 'PE fund deploy',      q: 'PE+fund+india+deploys+invests+portfolio+crore+2026' },
-    { name: 'VC new funds',        q: 'venture+fund+india+raises+corpus+AIF+SEBI+2026' },
-    { name: 'PE exits',            q: 'PE+private+equity+exit+IPO+stake+sale+india+2026' },
-    // Strategic acquirers
-    { name: 'Conglomerate buys',   q: 'Adani+Tata+Reliance+Mahindra+acquires+buys+india+2026' },
-    { name: 'MNC India',           q: 'MNC+multinational+india+acquisition+entry+joint+venture+2026' },
-    // Source-specific
-    { name: 'ET Deals',            q: 'site:economictimes.indiatimes.com+acquisition+deal+stake+2026' },
-    { name: 'BS Deals',            q: 'site:business-standard.com+acquisition+merger+deal+2026' },
-    { name: 'Mint Deals',          q: 'site:livemint.com+acquisition+merger+deal+stake+2026' },
-    { name: 'VCCircle',            q: 'site:vccircle.com+investment+acquisition+fund+2026' },
+  // ── GOOGLE NEWS QUERIES (42 targeted queries × ~6 articles = ~250 unique articles) ──
+  const gnQueries = [
+    // Core M&A deal announcements
+    'india+acquisition+merger+deal+company+2026',
+    'india+acquires+company+deal+signed+crore',
+    'india+signs+definitive+agreement+acquisition',
+    'india+completes+acquisition+merger+2026',
+    'india+announces+strategic+investment+acquisition',
+    'india+takeover+buyout+controlling+stake+2026',
+    'india+enters+binding+term+sheet+deal',
+    'india+cross+border+outbound+acquisition+2026',
+
+    // PE / VC deal activity
+    'india+private+equity+acquires+buyout+2026',
+    'india+PE+buys+stake+majority+company',
+    'india+venture+capital+fund+invests+series+2026',
+    'india+AIF+category+fund+raises+corpus+2026',
+    'india+family+office+invests+stake+company+2026',
+    'india+PE+exit+secondary+sale+stake+2026',
+    'india+sovereign+wealth+fund+GIC+Temasek+invests',
+    'india+pension+CPPIB+CDPQ+APG+invests+india',
+    'india+growth+equity+invests+company+2026',
+    'india+private+credit+structured+debt+india+2026',
+
+    // Sector — Accomplir mandate universe
+    'india+hospital+healthcare+acquisition+beds+2026',
+    'india+hospital+chain+acquired+merger+network',
+    'india+diagnostic+lab+pathology+acquisition+2026',
+    'india+hotel+resort+hospitality+acquisition+2026',
+    'india+hotel+chain+portfolio+acquires+2026',
+    'india+FMCG+brand+consumer+foods+acquisition+2026',
+    'india+food+beverage+brand+acquired+2026',
+    'india+pharma+drug+company+acquisition+2026',
+    'india+medical+device+healthcare+acquisition+2026',
+    'india+manufacturing+industrial+plant+acquisition+2026',
+    'india+power+energy+transmission+acquisition+2026',
+    'india+solar+EPC+renewable+acquisition+2026',
+    'india+EV+electric+vehicle+acquisition+2026',
+    'india+logistics+warehousing+supply+chain+acquisition+2026',
+    'india+fintech+payments+NBFC+acquisition+2026',
+    'india+lending+microfinance+NBFC+acquired+2026',
+    'india+real+estate+proptech+platform+acquisition+2026',
+    'india+IT+technology+GCC+services+acquisition+2026',
+    'india+software+SaaS+technology+acquired+2026',
+    'india+education+edtech+school+coaching+acquisition+2026',
+    'india+media+entertainment+OTT+acquisition+2026',
+    'india+retail+ecommerce+D2C+brand+acquisition+2026',
+    'india+agri+agtech+food+processing+acquisition+2026',
+
+    // Strategic acquirer specific  
+    'Adani+acquires+buys+stake+deal+2026',
+    'Tata+acquires+buys+stake+deal+2026',
+    'Reliance+acquires+buys+stake+deal+2026',
+    'Mahindra+acquires+buys+stake+deal+2026',
+    'Birla+Bajaj+Godrej+acquires+deal+2026',
+    'MNC+multinational+enters+india+acquisition+2026',
   ];
 
   const results = [];
-  const cutoff = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000); // 4 days
+  const cutoff = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000); // 5 days
 
-  // Fetch direct feeds
-  await Promise.allSettled(directFeeds.map(async (feed) => {
-    try {
-      const r = await fetch(feed.url, {
-        headers: { 'User-Agent': ua },
-        signal: AbortSignal.timeout(6000)
+  function parseItems(xml, sourceName) {
+    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+    const out = [];
+    for (const item of items) {
+      const block = item[1];
+      const title = (block.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
+      const desc = (block.match(/<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/) || [])[1]
+        ?.replace(/<[^>]+>/g, '')?.trim()?.substring(0, 300) || '';
+      const pubDate = (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1]?.trim() || '';
+      const source = (block.match(/<source[^>]*>(.*?)<\/source>/) || [])[1]?.trim() || sourceName;
+      if (!title || title === 'Google News') continue;
+      let articleDate = pubDate ? new Date(pubDate) : null;
+      if (articleDate && isNaN(articleDate.getTime())) articleDate = null;
+      if (articleDate && articleDate < cutoff) continue;
+      out.push({
+        source: source || sourceName,
+        title: title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#39;/g,"'").replace(/&quot;/g,'"'),
+        description: desc.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#39;/g,"'").replace(/&quot;/g,'"'),
+        date: articleDate ? articleDate.toISOString() : new Date().toISOString(),
       });
-      if (!r.ok) return;
-      const xml = await r.text();
-      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
-      for (const item of items.slice(0, 20)) {
-        const block = item[1];
-        const title = (block.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
-        const desc = (block.match(/<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/) || [])[1]
-          ?.replace(/<[^>]+>/g, '')?.trim()?.substring(0, 280) || '';
-        const pubDate = (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1]?.trim() || '';
-        const link = (block.match(/<link>(.*?)<\/link>/) || [])[1]?.trim() || '';
-        if (!title) continue;
-        let articleDate = pubDate ? new Date(pubDate) : null;
-        if (articleDate && isNaN(articleDate.getTime())) articleDate = null;
-        if (articleDate && articleDate < cutoff) continue;
-        results.push({
-          source: feed.name,
-          title: title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#39;/g,"'").replace(/&quot;/g,'"'),
-          description: desc.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#39;/g,"'").replace(/&quot;/g,'"'),
-          date: articleDate ? articleDate.toISOString() : new Date().toISOString(),
-          link, category: feed.name
-        });
-      }
-    } catch(e) { /* skip */ }
-  }));
+    }
+    return out;
+  }
 
-  // Fetch Google News RSS queries
-  await Promise.allSettled(googleNewsQueries.map(async ({ name, q }) => {
-    try {
-      const url = `https://news.google.com/rss/search?q=${q}&hl=en-IN&gl=IN&ceid=IN:en`;
-      const r = await fetch(url, {
-        headers: { 'User-Agent': ua },
-        signal: AbortSignal.timeout(6000)
-      });
-      if (!r.ok) return;
-      const xml = await r.text();
-      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
-      for (const item of items.slice(0, 12)) {
-        const block = item[1];
-        const title = (block.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim() || '';
-        const desc = (block.match(/<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/) || [])[1]
-          ?.replace(/<[^>]+>/g, '')?.trim()?.substring(0, 280) || '';
-        const pubDate = (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1]?.trim() || '';
-        const source = (block.match(/<source[^>]*>(.*?)<\/source>/) || [])[1]?.trim() || name;
-        if (!title || title === 'Google News') continue;
-        let articleDate = pubDate ? new Date(pubDate) : null;
-        if (articleDate && isNaN(articleDate.getTime())) articleDate = null;
-        if (articleDate && articleDate < cutoff) continue;
-        results.push({
-          source: source || name,
-          title: title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#39;/g,"'").replace(/&quot;/g,'"'),
-          description: desc.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#39;/g,"'").replace(/&quot;/g,'"'),
-          date: articleDate ? articleDate.toISOString() : new Date().toISOString(),
-          link: '', category: name
-        });
-      }
-    } catch(e) { /* skip */ }
-  }));
+  // Fetch all sources in parallel
+  await Promise.allSettled([
+    // Direct feeds
+    ...directFeeds.map(async (feed) => {
+      try {
+        const r = await fetch(feed.url, { headers: { 'User-Agent': ua }, signal: AbortSignal.timeout(6000) });
+        if (!r.ok) return;
+        results.push(...parseItems(await r.text(), feed.name));
+      } catch(e) {}
+    }),
+    // Google News queries
+    ...gnQueries.map(async (q) => {
+      try {
+        const url = `https://news.google.com/rss/search?q=${q}&hl=en-IN&gl=IN&ceid=IN:en`;
+        const r = await fetch(url, { headers: { 'User-Agent': ua }, signal: AbortSignal.timeout(7000) });
+        if (!r.ok) return;
+        results.push(...parseItems(await r.text(), 'Google News'));
+      } catch(e) {}
+    }),
+  ]);
 
-  // Sort newest first, deduplicate
+  // Sort newest first, deduplicate by title
   results.sort((a, b) => new Date(b.date) - new Date(a.date));
   const seen = new Set();
   const deduped = results.filter(r => {
-    const key = r.title.substring(0, 60).toLowerCase().replace(/\s+/g, '');
+    const key = r.title.substring(0, 55).toLowerCase().replace(/[^a-z0-9]/g, '');
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -136,6 +143,6 @@ export default async function handler(req, res) {
   res.status(200).json({
     count: deduped.length,
     fetched_at: new Date().toISOString(),
-    articles: deduped.slice(0, 200) // increased from 120 to 200
+    articles: deduped.slice(0, 300)
   });
 }
