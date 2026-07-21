@@ -3013,7 +3013,7 @@ Extract EVERY M&A signal — be exhaustive, not selective. Include:
 
 Return 8-12 signals. For each, flag if it matches our pipeline.
 Return ONLY a JSON array, no markdown:
-[{"company":"Name","sector":"Sector","intent":"Precise what/where/size","range":"Xcr or USD","source":"Publication","date":"DD-Mon-YY","match":"our lead/signal name or empty","age":"today/yesterday/recent","headline_ref":"brief headline quote"}]`;
+[{"company":"Short company name ONLY — not headline, max 4 words e.g. CEAT or Manipal Hospitals","sector":"Sector","intent":"Precise what/where/size","range":"Xcr or USD","source":"Publication","date":"DD-Mon-YY","match":"our lead/signal name or empty","age":"today/yesterday/recent","headline_ref":"brief headline quote"}]`;
 
     const r = await fetch('/api/chat', {
       method: 'POST',
@@ -3087,11 +3087,25 @@ Return ONLY a JSON array, no markdown:
   btn.classList.remove('scanning');
 }
 
+function cleanCompanyName(raw) {
+  if (!raw) return '';
+  // If it looks like a full sentence/headline, extract just the company name
+  // Company names are typically short (< 6 words) and don't contain verbs like "lines up", "raises", "acquires"
+  const actionWords = ['lines up', 'raises', 'acquires', 'buys', 'invests', 'expands', 'launches', 'announces', 'plans', 'targets', 'eyes', 'sets up'];
+  const lower = raw.toLowerCase();
+  if (actionWords.some(w => lower.includes(w)) || raw.split(' ').length > 5) {
+    // Extract first meaningful noun phrase (up to first verb or punctuation)
+    const cleaned = raw.split(/\s+(lines|raises|acquires|buys|invests|expands|launches|announces|plans|targets|eyes|sets|to |for |with |and |-|–|:|,)/i)[0].trim();
+    return cleaned.substring(0, 60);
+  }
+  return raw.substring(0, 60);
+}
+
 function addNewsSignal(idx, s) {
   const today = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
   const signal = {
     date: today,
-    co: s.company||'',
+    co: cleanCompanyName(s.company)||'',
     sector: s.sector||'',
     range: s.range||'',
     source: s.source||'News scan',
@@ -3222,11 +3236,25 @@ async function generateBrief() {
   btn.classList.remove('scanning');
 }
 
+function cleanCompanyName(raw) {
+  if (!raw) return '';
+  // If it looks like a full sentence/headline, extract just the company name
+  // Company names are typically short (< 6 words) and don't contain verbs like "lines up", "raises", "acquires"
+  const actionWords = ['lines up', 'raises', 'acquires', 'buys', 'invests', 'expands', 'launches', 'announces', 'plans', 'targets', 'eyes', 'sets up'];
+  const lower = raw.toLowerCase();
+  if (actionWords.some(w => lower.includes(w)) || raw.split(' ').length > 5) {
+    // Extract first meaningful noun phrase (up to first verb or punctuation)
+    const cleaned = raw.split(/\s+(lines|raises|acquires|buys|invests|expands|launches|announces|plans|targets|eyes|sets|to |for |with |and |-|–|:|,)/i)[0].trim();
+    return cleaned.substring(0, 60);
+  }
+  return raw.substring(0, 60);
+}
+
 function addNewsSignal(idx, s) {
   const today = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
   const signal = {
     date: today,
-    co: s.company||'',
+    co: cleanCompanyName(s.company)||'',
     sector: s.sector||'',
     range: s.range||'',
     source: s.source||'News scan',
@@ -4000,7 +4028,7 @@ function renderStressRow(a, showType) {
 // ── Add to M&A from Stress ──
 function addStressToLead(a) {
   // Extract company name from title (first meaningful noun phrase)
-  const co = a.title.split(/[-–:,|]/)[0].trim().substring(0, 60) || 'Unknown';
+  const co = cleanCompanyName(a.title.split(/[-–:,|]/)[0].trim()) || 'Unknown';
   const today = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
   const lead = { n: LEADS.length+1, co, type: 'Sell', status: 'Open', size: '', lead: 'Zeenath', contact: '', next: 'Initial outreach — credit event: ' + a.title.substring(0,80), date: today };
   LEADS.push(lead);
@@ -4017,7 +4045,7 @@ function addStressToLead(a) {
 }
 
 function addStressToIntent(a) {
-  const co = a.title.split(/[-–:,|]/)[0].trim().substring(0, 60) || 'Unknown';
+  const co = cleanCompanyName(a.title.split(/[-–:,|]/)[0].trim()) || 'Unknown';
   const today = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
   const signal = { date: today, co, sector: '', range: '', source: a.source || 'Credeye', contact: '', intent: a.title + (a.description ? ' — ' + a.description.substring(0,100) : '') };
   INTENT.unshift(signal);
