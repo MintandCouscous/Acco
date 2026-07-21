@@ -1,0 +1,43 @@
+{
+  "name": "Acco \u2014 Accomplir Deal Intelligence",
+  "short_name": "Acco",
+  "description": "Accomplir Advisors deal intelligence platform \u2014 leads, tasks, intent and M&A signals",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1629",
+  "theme_color": "#0f1629",
+  "orientation": "landscape-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": [
+    "business",
+    "finance",
+    "productivity"
+  ],
+  "shortcuts": [
+    {
+      "name": "Overview",
+      "short_name": "Overview",
+      "description": "M&A deal overview",
+      "url": "/"
+    },
+    {
+      "name": "Daily Brief",
+      "short_name": "Brief",
+      "description": "Today's M&A intelligence brief",
+      "url": "/#brief"
+    }
+  ]
+}
