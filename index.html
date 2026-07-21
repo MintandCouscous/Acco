@@ -774,6 +774,16 @@ tr { transition: background 0.1s; }
 .insol-mode .hero { background: linear-gradient(160deg, #fdf8f0 0%, #fef5ec 40%, #fcf0e8 100%) !important; }
 
 </style>
+
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0f1629">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Acco">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
 </head>
 <body>
 
@@ -4208,6 +4218,48 @@ setTimeout(() => {
 
 // ── INIT ──
 checkExistingSession();
+
+// ── PWA SERVICE WORKER ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      console.log('Acco SW registered:', reg.scope);
+    }).catch(err => {
+      console.log('SW registration failed:', err);
+    });
+  });
+}
+
+// ── PWA INSTALL PROMPT ──
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  // Show a subtle install banner if not already installed
+  const existing = document.getElementById('pwa-install-bar');
+  if (!existing) {
+    const bar = document.createElement('div');
+    bar.id = 'pwa-install-bar';
+    bar.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#0f1629;color:white;padding:12px 20px;border-radius:12px;font-size:13px;font-family:var(--sans);display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:9999;border:1px solid rgba(201,168,76,0.3)';
+    bar.innerHTML = '<span>\u{1F4F2}</span><span>Install Acco as a desktop app</span><button onclick="installPWA()" style="background:var(--gold);color:#0f1629;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)">Install</button><button onclick="dismissPWABar()" style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:18px;line-height:1;padding:0">&#215;</button>';
+    document.body.appendChild(bar);
+  }
+});
+
+function dismissPWABar() { const b = document.getElementById("pwa-install-bar"); if (b) b.remove(); }
+
+function installPWA() {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(choice => {
+      if (choice.outcome === 'accepted') {
+        const bar = document.getElementById('pwa-install-bar');
+        if (bar) bar.remove();
+      }
+      deferredInstallPrompt = null;
+    });
+  }
+}
 </script>
 </body>
 </html>
