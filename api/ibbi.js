@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   function extractPdfLink(cellHtml) {
     // Extract href from <a href=https://ibbi.gov.in//uploads/...pdf
     const m = cellHtml.match(/href=(https:\/\/ibbi\.gov\.in\/[^\s"']+\.pdf)/i);
-    if (m) return m[1].replace('//', '/').replace('ibbi.gov.in/', 'ibbi.gov.in/');
+    if (m) return m[1].replace('ibbi.gov.in//', 'ibbi.gov.in/');
     return '';
   }
 
