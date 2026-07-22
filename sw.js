@@ -1,5 +1,5 @@
 // Acco Service Worker — caches shell for offline/fast load
-const CACHE = 'acco-v1';
+const CACHE = 'acco-v2';
 const SHELL = ['/', '/manifest.json'];
 
 self.addEventListener('install', e => {
