@@ -1307,7 +1307,7 @@ tr { transition: background 0.1s; }
           <span class="filter-count" id="fac-label">— records</span>
         </div>
         <div class="tbl-wrap"><table>
-          <thead><tr><th>Date</th><th>Type</th><th>Corporate Debtor</th><th>Applicant</th><th>Resolution Professional</th><th>Last date submission</th></tr></thead>
+          <thead><tr><th>Date</th><th>Type</th><th>Corporate Debtor</th><th>Scale / Type</th><th>Applicant</th><th>Resolution Professional</th><th>Last date submission</th><th>Notice</th></tr></thead>
           <tbody id="forma-body"><tr><td colspan="6"><div class="data-loading"><div class="spin"></div>Loading from IBBI...</div></td></tr></tbody>
         </table></div>
       </div>
@@ -1323,7 +1323,7 @@ tr { transition: background 0.1s; }
           <span class="filter-count" id="fgc-label">— records</span>
         </div>
         <div class="tbl-wrap"><table>
-          <thead><tr><th>Corporate Debtor</th><th>Resolution Professional</th><th>Last EOI date</th><th>Prospective applicants</th><th>Objections deadline</th></tr></thead>
+          <thead><tr><th>Corporate Debtor</th><th>Scale / Type</th><th>Resolution Professional</th><th>Last EOI date</th><th>Prospective applicants</th><th>Objections deadline</th><th>Notice</th></tr></thead>
           <tbody id="formg-body"><tr><td colspan="5"><div class="data-loading"><div class="spin"></div>Loading from IBBI...</div></td></tr></tbody>
         </table></div>
       </div>
@@ -3627,25 +3627,38 @@ function updateInsolStats() {
 
 function renderFormA(data) {
   document.getElementById('fac-label').textContent = data.length + ' records';
-  document.getElementById('forma-body').innerHTML = data.map(f => `<tr>
-    <td class="dim" style="white-space:nowrap">${f.announcementDate||'—'}</td>
-    <td class="dim">${(f.type||'—').replace('Public Announcement of ','')}</td>
-    <td class="strong">${f.company||'—'}</td>
-    <td class="dim">${(f.applicant||'—').substring(0,30)}</td>
-    <td class="dim">${(f.resolutionProfessional||'—').substring(0,30)}</td>
-    <td class="dim" style="white-space:nowrap">${f.lastDateSubmission||'—'}</td>
-  </tr>`).join('') || '<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--muted)">No records found.</td></tr>';
+  document.getElementById('forma-body').innerHTML = data.map(f => {
+    const typeShort = (f.type||'').replace('Public Announcement of Corporate Insolvency Resolution Process','CIRP').replace('Public Announcement of Liquidation Process','Liquidation').replace('Public Announcement of ','');
+    const pdfBtn = f.pdfLink ? `<a href="${f.pdfLink}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;background:#fdeaea;color:#c0392b;font-size:10px;font-weight:700;padding:3px 10px;border-radius:8px;text-decoration:none;white-space:nowrap">📄 PDF${f.pdfSize?' ('+f.pdfSize+')':''}</a>` : '—';
+    const scaleColor = {'Public Ltd':'#1a3a9e','NBFC/Finance':'#5a1a9e','Real Estate':'#7a4500','Manufacturing':'#1a6e4a','Healthcare':'#0a2a6e','Energy':'#6e4a00'}[f.scale] || '#555';
+    return `<tr>
+      <td class="dim" style="white-space:nowrap">${f.announcementDate||'—'}</td>
+      <td><span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:#f0ede8;color:#555">${typeShort}</span></td>
+      <td class="strong">${f.company||'—'}</td>
+      <td><span style="font-size:10px;font-weight:600;color:${scaleColor}">${f.scale||'—'}</span></td>
+      <td class="dim">${(f.applicant||'—').substring(0,28)}</td>
+      <td class="dim">${(f.resolutionProfessional||'—').substring(0,28)}</td>
+      <td class="dim" style="white-space:nowrap">${f.lastDateSubmission||'—'}</td>
+      <td>${pdfBtn}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" style="padding:20px;text-align:center;color:var(--muted)">No records found.</td></tr>';
 }
 
 function renderFormG(data) {
   document.getElementById('fgc-label').textContent = data.length + ' records';
-  document.getElementById('formg-body').innerHTML = data.map(f => `<tr>
-    <td class="strong">${f.company||'—'}</td>
-    <td class="dim">${(f.resolutionProfessional||'—').substring(0,30)}</td>
-    <td class="dim" style="white-space:nowrap">${f.lastDateEOI||'—'}</td>
-    <td class="dim" style="white-space:nowrap">${f.dateIssueProspective||'—'}</td>
-    <td class="dim" style="white-space:nowrap">${f.lastDateObjections||'—'}</td>
-  </tr>`).join('') || '<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--muted)">No records found.</td></tr>';
+  document.getElementById('formg-body').innerHTML = data.map(f => {
+    const pdfBtn = f.pdfLink ? `<a href="${f.pdfLink}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;background:#fdeaea;color:#c0392b;font-size:10px;font-weight:700;padding:3px 10px;border-radius:8px;text-decoration:none;white-space:nowrap">📄 PDF${f.pdfSize?' ('+f.pdfSize+')':''}</a>` : '—';
+    const scaleColor = {'Public Ltd':'#1a3a9e','NBFC/Finance':'#5a1a9e','Real Estate':'#7a4500','Manufacturing':'#1a6e4a','Healthcare':'#0a2a6e','Energy':'#6e4a00'}[f.scale] || '#555';
+    return `<tr>
+      <td class="strong">${f.company||'—'}</td>
+      <td><span style="font-size:10px;font-weight:600;color:${scaleColor}">${f.scale||'—'}</span></td>
+      <td class="dim">${(f.resolutionProfessional||'—').substring(0,28)}</td>
+      <td class="dim" style="white-space:nowrap">${f.lastDateEOI||'—'}</td>
+      <td class="dim" style="white-space:nowrap">${f.dateIssueProspective||'—'}</td>
+      <td class="dim" style="white-space:nowrap">${f.lastDateObjections||'—'}</td>
+      <td>${pdfBtn}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="padding:20px;text-align:center;color:var(--muted)">No records found.</td></tr>';
 }
 
 function renderFormAPreview() {
@@ -3655,8 +3668,8 @@ function renderFormAPreview() {
     <div class="task-row ip">
       <div class="av av-x">${(f.company||'?')[0].toUpperCase()}</div>
       <div style="flex:1">
-        <div class="task-name">${f.company}</div>
-        <div class="task-meta">${(f.type||'').replace('Public Announcement of ','')} · RP: ${f.resolutionProfessional} · Due ${f.lastDateSubmission}</div>
+        <div class="task-name">${f.company} <span style="font-size:10px;font-weight:600;color:#1a3a9e;background:#e8eeff;padding:1px 6px;border-radius:8px">${f.scale||''}</span></div>
+        <div class="task-meta">${(f.type||'').replace('Public Announcement of ','').replace('Corporate Insolvency Resolution Process','CIRP')} · RP: ${f.resolutionProfessional} · Due ${f.lastDateSubmission} ${f.pdfLink?'· <a href="'+f.pdfLink+'" target="_blank" style="color:#c0392b;font-weight:600;text-decoration:none">📄 PDF</a>':''}</div>
       </div>
     </div>`).join('');
 }
@@ -3668,8 +3681,8 @@ function renderFormGPreview() {
     <div class="task-row ip">
       <div class="av av-x">${(f.company||'?')[0].toUpperCase()}</div>
       <div style="flex:1">
-        <div class="task-name">${f.company}</div>
-        <div class="task-meta">RP: ${f.resolutionProfessional} · EOI due ${f.lastDateEOI}</div>
+        <div class="task-name">${f.company} <span style="font-size:10px;font-weight:600;color:#1a6e4a;background:#e8f5ee;padding:1px 6px;border-radius:8px">${f.scale||''}</span></div>
+        <div class="task-meta">RP: ${f.resolutionProfessional} · EOI due ${f.lastDateEOI} ${f.pdfLink?'· <a href="'+f.pdfLink+'" target="_blank" style="color:#c0392b;font-weight:600;text-decoration:none">📄 PDF</a>':''}</div>
       </div>
     </div>`).join('');
 }
@@ -3964,6 +3977,33 @@ function addStressWatchlist() {
   if (STRESS_DATA) renderAllStressViews();
 }
 
+function addToStressWatchlistDirect(coName) {
+  if (!coName || !coName.trim()) return;
+  const name = coName.trim();
+  if (STRESS_WATCHLIST.includes(name)) {
+    alert(name + ' is already on your watchlist');
+    return;
+  }
+  STRESS_WATCHLIST.push(name);
+  localStorage.setItem('stress_watchlist', JSON.stringify(STRESS_WATCHLIST));
+  renderStressWatchlistPills();
+  if (STRESS_DATA) renderAllStressViews();
+  // Brief visual confirmation
+  const evt = window.event;
+  if (evt && evt.target) {
+    evt.target.textContent = '✓ Watching';
+    evt.target.style.background = '#0a2a18';
+    evt.target.style.color = '#4ade80';
+    setTimeout(() => {
+      if (evt.target) {
+        evt.target.textContent = '👁 Watch';
+        evt.target.style.background = '#e8f5ee';
+        evt.target.style.color = '#0a2a18';
+      }
+    }, 1500);
+  }
+}
+
 function removeStressWatchlist(idx) {
   STRESS_WATCHLIST.splice(idx, 1);
   localStorage.setItem('stress_watchlist', JSON.stringify(STRESS_WATCHLIST));
@@ -4020,16 +4060,26 @@ function renderStressRow(a, showType) {
   const catLabel = { downgrade:'⬇ Downgrade', stress:'⚠ Stress', expansion:'↗ Expansion', upgrade:'⬆ Upgrade' };
   const bg = hit ? 'background:#f0faf5;' : '';
 
+  // Extract company name from title for watchlist
+  const coName = a.title.split(/\s+(lines|raises|acquires|buys|downgrades|upgrades|revises|places|admits|files|defaults)/i)[0].trim().substring(0,40);
+  const safeTitle = (a.title||'').replace(/'/g,"\\'").substring(0,80);
+  const safeCoName = coName.replace(/'/g,"\\'");
+  const linkHtml = a.link
+    ? `<a href="${a.link}" target="_blank" rel="noopener" style="font-size:10px;color:#1a3a9e;text-decoration:none;font-weight:600;white-space:nowrap" title="Open article">↗ Read</a>`
+    : '';
   return `<tr style="${bg}">
     <td style="white-space:nowrap">${date}</td>
-    <td class="strong" style="max-width:180px">${a.title.substring(0,80)}</td>
-    <td class="note" style="font-size:12px;max-width:260px">${(a.description||'').substring(0,150)}${hit ? ' <span style="font-size:9px;font-weight:700;color:white;background:#1a6e4a;padding:1px 6px;border-radius:10px;vertical-align:middle">WATCHLIST</span>' : ''}</td>
+    <td class="strong" style="max-width:180px">
+      ${a.title.substring(0,80)}
+    </td>
+    <td class="note" style="font-size:12px;max-width:240px">${(a.description||'').substring(0,150)}${hit ? ' <span style="font-size:9px;font-weight:700;color:white;background:#1a6e4a;padding:1px 6px;border-radius:10px;vertical-align:middle">WATCHLIST</span>' : ''}</td>
     ${showType ? `<td><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:${catColors[a.category]||'#f5f2eb;color:#888'}">${catLabel[a.category]||a.category}</span></td>` : ''}
-    <td class="dim" style="font-size:11px;white-space:nowrap">${(a.source||'').substring(0,20)}</td>
+    <td class="dim" style="font-size:11px;white-space:nowrap">${(a.source||'').substring(0,18)}<br>${linkHtml}</td>
     <td style="white-space:nowrap">
-      <div style="display:flex;gap:4px">
-        <button onclick="addStressToLead(${JSON.stringify(a).replace(/"/g,'&quot;')})" style="font-size:10px;font-weight:700;color:#1a3a9e;background:#e8eeff;border:none;border-radius:12px;padding:3px 8px;cursor:pointer" title="Add as lead">+ Lead</button>
-        <button onclick="addStressToIntent(${JSON.stringify(a).replace(/"/g,'&quot;')})" style="font-size:10px;font-weight:700;color:#1a6e4a;background:#e8f5ee;border:none;border-radius:12px;padding:3px 8px;cursor:pointer" title="Add as intent">+ Signal</button>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <button onclick="addToStressWatchlistDirect('${safeCoName}')" style="font-size:10px;font-weight:700;color:#0a2a18;background:#e8f5ee;border:1px solid #a7d7bc;border-radius:12px;padding:3px 8px;cursor:pointer" title="Add to watchlist">👁 Watch</button>
+        <button onclick="addStressToLead(${JSON.stringify(a).replace(/"/g,'&quot;')})" style="font-size:10px;font-weight:700;color:#1a3a9e;background:#e8eeff;border:none;border-radius:12px;padding:3px 8px;cursor:pointer">+ Lead</button>
+        <button onclick="addStressToIntent(${JSON.stringify(a).replace(/"/g,'&quot;')})" style="font-size:10px;font-weight:700;color:#1a6e4a;background:#e8f5ee;border:none;border-radius:12px;padding:3px 8px;cursor:pointer">+ Signal</button>
       </div>
     </td>
   </tr>`;
