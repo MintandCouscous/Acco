@@ -1,6 +1,7 @@
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=7200');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
@@ -16,22 +17,53 @@ export default async function handler(req, res) {
       .trim();
   }
 
+  function extractPdfLink(cellHtml) {
+    // Extract href from <a href=https://ibbi.gov.in//uploads/...pdf
+    const m = cellHtml.match(/href=(https:\/\/ibbi\.gov\.in\/[^\s"']+\.pdf)/i);
+    if (m) return m[1].replace('//', '/').replace('ibbi.gov.in/', 'ibbi.gov.in/');
+    return '';
+  }
+
+  function extractPdfSize(cellHtml) {
+    const m = cellHtml.match(/\(([0-9.]+ [KMG]B)\)/i);
+    return m ? m[1] : '';
+  }
+
   function getRows(html) {
     const tableMatch = html.match(/<table[^>]*>([\s\S]*?)<\/table>/i);
     if (!tableMatch) return [];
-    const rows = [...tableMatch[1].matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)];
-    return rows.map(r => [...r[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(c => cleanCell(c[1])));
+    return [...tableMatch[1].matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)]
+      .map(r => [...r[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)]
+        .map(c => ({ text: cleanCell(c[1]), raw: c[1] })));
   }
 
   const HEADER_MARKERS = ['Name of Corporate Debtor', 'Type of PA', 'S. No.'];
   function isHeaderRow(cells) {
-    return cells.some(c => HEADER_MARKERS.includes(c));
+    return cells.some(c => HEADER_MARKERS.includes(c.text));
+  }
+
+  // Determine company type/scale from name
+  function inferScale(name) {
+    const n = (name || '').toUpperCase();
+    if (n.includes('LIMITED') && !n.includes('PRIVATE')) return 'Public Ltd';
+    if (n.includes('PRIVATE LIMITED') || n.includes('PVT. LTD') || n.includes('PVT LTD')) return 'Pvt Ltd';
+    if (n.includes('LLP')) return 'LLP';
+    if (n.includes('CORPORATION')) return 'Corporation';
+    if (n.includes('INDUSTRIES') || n.includes('MANUFACTURING') || n.includes('STEEL') || n.includes('TEXTILE')) return 'Manufacturing';
+    if (n.includes('FINANCE') || n.includes('LEASING') || n.includes('CAPITAL') || n.includes('CREDIT')) return 'NBFC/Finance';
+    if (n.includes('REAL') || n.includes('BUILD') || n.includes('INFRA') || n.includes('DEVELOPER') || n.includes('CONSTRUC')) return 'Real Estate';
+    if (n.includes('FOOD') || n.includes('DAIRY') || n.includes('AGRI')) return 'Food/Agri';
+    if (n.includes('TECH') || n.includes('SOFT') || n.includes('DIGITAL') || n.includes('IT')) return 'Tech';
+    if (n.includes('HOSPITAL') || n.includes('HEALTH') || n.includes('PHARMA') || n.includes('MEDICAL')) return 'Healthcare';
+    if (n.includes('HOTEL') || n.includes('HOSPITALITY') || n.includes('RESORT')) return 'Hospitality';
+    if (n.includes('POWER') || n.includes('ENERGY') || n.includes('SOLAR') || n.includes('RENEW')) return 'Energy';
+    if (n.includes('TRANSPORT') || n.includes('LOGISTIC') || n.includes('AUTO')) return 'Transport/Auto';
+    return 'Other';
   }
 
   const results = { formA: [], formG: [], errors: [] };
 
-  // Fetch Form A (Public Announcements) - 9 columns:
-  // 0=Type, 1=AnnounceDate, 2=LastDateSubmit, 3=Company, 4=Applicant, 5=IP Name, 6=IP Address, 7=PDF size, 8=Remarks
+  // ── FORM A ──
   try {
     const r = await fetch('https://ibbi.gov.in/public-announcement', {
       headers: { 'User-Agent': ua },
@@ -41,17 +73,25 @@ export default async function handler(req, res) {
       const html = await r.text();
       const rows = getRows(html);
       results.formA = rows
-        .filter(c => c.length >= 9 && c[3] && !isHeaderRow(c))
-        .map(c => ({
-          type: c[0] || '',
-          announcementDate: c[1] || '',
-          lastDateSubmission: c[2] || '',
-          company: c[3] || '',
-          applicant: c[4] || '',
-          resolutionProfessional: c[5] || '',
-          ipAddress: c[6] || '',
-          remarks: c[8] || ''
-        }))
+        .filter(c => c.length >= 7 && !isHeaderRow(c))
+        .map(c => {
+          const pdfLink = extractPdfLink(c[7]?.raw || '');
+          const pdfSize = extractPdfSize(c[7]?.raw || '');
+          const company = c[3]?.text || '';
+          return {
+            type: c[0]?.text || '',
+            announcementDate: c[1]?.text || '',
+            lastDateSubmission: c[2]?.text || '',
+            company,
+            applicant: c[4]?.text || '',
+            resolutionProfessional: c[5]?.text || '',
+            pdfLink,
+            pdfSize,
+            scale: inferScale(company),
+            remarks: c[8]?.text || ''
+          };
+        })
+        .filter(r => r.company)
         .slice(0, 25);
     } else {
       results.errors.push('Form A fetch failed: ' + r.status);
@@ -60,8 +100,7 @@ export default async function handler(req, res) {
     results.errors.push('Form A error: ' + e.message);
   }
 
-  // Fetch Form G (Resolution Plans) - 7 columns:
-  // 0=Company, 1=RP Name, 2=LastDateEOI, 3=DateIssueProspective, 4=LastDateObjections, 5=PDF size, 6=Remarks
+  // ── FORM G ──
   try {
     const r = await fetch('https://ibbi.gov.in/resolution-plans', {
       headers: { 'User-Agent': ua },
@@ -71,15 +110,24 @@ export default async function handler(req, res) {
       const html = await r.text();
       const rows = getRows(html);
       results.formG = rows
-        .filter(c => c.length >= 6 && c[0] && !isHeaderRow(c))
-        .map(c => ({
-          company: c[0] || '',
-          resolutionProfessional: c[1] || '',
-          lastDateEOI: c[2] || '',
-          dateIssueProspective: c[3] || '',
-          lastDateObjections: c[4] || '',
-          remarks: c[6] || ''
-        }))
+        .filter(c => c.length >= 5 && !isHeaderRow(c))
+        .map(c => {
+          const pdfLink = extractPdfLink(c[5]?.raw || '');
+          const pdfSize = extractPdfSize(c[5]?.raw || '');
+          const company = c[0]?.text || '';
+          return {
+            company,
+            resolutionProfessional: c[1]?.text || '',
+            lastDateEOI: c[2]?.text || '',
+            dateIssueProspective: c[3]?.text || '',
+            lastDateObjections: c[4]?.text || '',
+            pdfLink,
+            pdfSize,
+            scale: inferScale(company),
+            remarks: c[6]?.text || ''
+          };
+        })
+        .filter(r => r.company)
         .slice(0, 25);
     } else {
       results.errors.push('Form G fetch failed: ' + r.status);
